@@ -1,12 +1,12 @@
 # Maintainer: Nguyen Ky <nhktmdzhg at google mail>
 pkgname=fcitx5-vmk-git
-pkgver=0.9.r9.g79d5142
+pkgver=0.9.r10.g79ea9f8
 pkgrel=1
 pkgdesc="VMK (Vietnamese Micro Key) for Fcitx5 - Bộ gõ tiếng Việt mô phỏng UniKey"
 arch=('x86_64')
 url="https://github.com/nhktmdzhg/VMK"
 license=('GPL-3.0-or-later')
-depends=('fcitx5' 'acl' 'bash' 'fcitx5-bamboo' 'libinput')
+depends=('fcitx5' 'fcitx5-bamboo' 'libinput' 'hicolor-icon-theme' 'glibc' 'gcc-libs' 'systemd-libs')
 makedepends=('cmake' 'go' 'extra-cmake-modules' 'gcc' 'git')
 provides=('fcitx5-vmk')
 conflicts=('fcitx5-vmk')
@@ -38,7 +38,7 @@ build() {
     
     cd "$srcdir/VMK"
     
-    g++ fcitx5-vmk-server.cpp -o fcitx5-vmk-server ${LDFLAGS} -lpthread -linput -ludev
+    g++ fcitx5-vmk-server.cpp -o fcitx5-vmk-server ${LDFLAGS} -linput -ludev
 }
 
 package() {
@@ -60,13 +60,13 @@ package() {
     install -Dm644 "$srcdir/VMK/docs/99-vmk.rules" \
     "$pkgdir/usr/lib/udev/rules.d/99-vmk.rules"
     
-    install -Dm644 "$srcdir/VMK/docs/fcitx5-vmk.conf" \
+    install -Dm644 "$srcdir/VMK/docs/module-fcitx5-vmk.conf" \
     "$pkgdir/usr/lib/modules-load.d/fcitx5-vmk.conf"
     
     install -Dm755 "$srcdir/VMK/fcitx5-vmk-server" \
     "$pkgdir/usr/bin/fcitx5-vmk-server"
 
-    install -Dm644 "$srcdir/VMK/docs/vmk.conf" \
+    install -Dm644 "$srcdir/VMK/docs/user-vmk.conf" \
     "$pkgdir/usr/lib/sysusers.d/vmk.conf"
     
     install -Dm644 "$srcdir/VMK/fcitx5-vmk/data/scalable/apps/fcitx-vmk.svg" \

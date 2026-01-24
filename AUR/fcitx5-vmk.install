@@ -5,7 +5,6 @@ green='\e[1;32m'
 
 post_install() {
     echo -e "${blue}--- Cấu hình VMK (Vietnamese Micro Key) ---${all_off}"
-    systemd-sysusers vmk.conf
 
     modprobe uinput
     udevadm control --reload-rules

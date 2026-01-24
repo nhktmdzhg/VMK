@@ -1,0 +1,160 @@
+# Fcitx5 VMK (Optimized Fork)
+
+**Bộ gõ tiếng Việt đơn giản, hiệu năng cao dành cho Fcitx5.**
+
+Dự án này là một bản fork được tối ưu hóa từ bộ gõ VMK gốc.
+
+> **Lưu ý:** Phiên bản này đã loại bỏ công cụ cấu hình cũ viết bằng FLTK. Mọi cấu hình giờ đây được thực hiện trực tiếp qua giao diện chuẩn của Fcitx5 hoặc qua Menu phím tắt mới.
+
+---
+
+## 🚀 Các Cải Tiến Nổi Bật (Changelog)
+
+Bản fork này thay đổi hoàn toàn kiến trúc của Server và Addon để đạt hiệu năng tốt nhất trên Linux hiện đại.
+
+### 1. VMK Server (Backend)
+
+Server (phần mềm chạy ngầm để giả lập phím và theo dõi chuột) đã được viết lại (Refactor) theo phong cách **System Programming**:
+
+- **Kiến trúc Event-Driven (Sử dụng `poll`):**
+  - **Cũ:** Dùng `usleep(5000)` để kiểm tra sự kiện liên tục (Polling 200Hz). Tốn CPU đánh thức hệ thống ngay cả khi không làm gì.
+  - **Mới:** Chuyển sang cơ chế `poll()` với timeout `-1`. Server sẽ "ngủ đông" hoàn toàn khi không có sự kiện. **Mức tiêu thụ CPU khi nhàn rỗi là 0.0%**.
+
+- **Single-Threaded (Đơn luồng):** Loại bỏ hoàn toàn `std::thread`. Gộp chung việc lắng nghe Socket và theo dõi Chuột (Libinput) vào một vòng lặp sự kiện duy nhất. Giảm overhead và dung lượng binary.
+
+- **Phản hồi Thời gian thực (Real-time I/O):**
+  - **Cũ:** Ghi file log chuột vào ổ cứng (có delay 1s để tránh hỏng ổ).
+  - **Mới:** Ghi trực tiếp tín hiệu vào `/run` (RAM/tmpfs). Loại bỏ hoàn toàn độ trễ, tín hiệu reset bộ gõ được gửi đi ngay lập tức khi bạn chạm vào chuột/touchpad.
+
+### 2. VMK Addon (Frontend)
+
+Cải thiện trải nghiệm người dùng để tiện lợi hơn khi làm việc đa nhiệm:
+
+- **Per-App Configuration (Cấu hình theo từng App):**
+  - Tự động ghi nhớ chế độ gõ (Mode) cho từng ứng dụng riêng biệt.
+  - _Ví dụ:_ Tự động tắt bộ gõ khi vào Terminal/Vim, tự bật vmk2 khi vào Chrome.
+
+- **Menu Phím Tắt Thông Minh (`` ` ``):**
+  - Nhấn `` ` `` (dấu huyền) để mở menu chọn nhanh chế độ ngay tại con trỏ văn bản chuẩn UI Fcitx5.
+  - Trạng thái hiện tại của App được đánh dấu rõ ràng trong danh sách chọn.
+
+---
+
+## 📦 Cài đặt
+
+### Arch Linux / Manjaro / EndeavourOS
+
+Gói `fcitx5-vmk-git` sẽ tự động tải mã nguồn mới nhất và biên dịch (Build from source). Quá trình build rất nhanh (chỉ vài giây) do mã nguồn cực nhẹ.
+
+```bash
+# Sử dụng yay
+yay -S fcitx5-vmk-git
+
+# Hoặc sử dụng paru
+paru -S fcitx5-vmk-git
+```
+
+### Các Distro khác (Ubuntu/Fedora/Debian)
+
+Hiện tại, bạn có thể cài đặt bằng cách biên dịch từ mã nguồn sử dụng Makefile:
+
+#### Yêu cầu hệ thống
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install cmake extra-cmake-modules libfcitx5core-dev libfcitx5config-dev libfcitx5utils-dev libinput-dev libudev-dev g++ go hicolor-icon-theme
+
+# Fedora/RHEL
+sudo dnf install cmake extra-cmake-modules fcitx5-devel libinput-devel libudev-devel gcc-c++ go hicolor-icon-theme
+
+# openSUSE
+sudo zypper install cmake extra-cmake-modules fcitx5-devel libinput-devel systemd-devel gcc-c++ go hicolor-icon-theme
+```
+
+#### Biên dịch và cài đặt
+
+```bash
+# Clone repository
+git clone https://github.com/nhktmdzhg/VMK.git
+cd VMK
+
+# Biên dịch
+make
+
+# Cài đặt (cần quyền root)
+sudo make install
+
+# Hoặc cài đặt vào thư mục tùy chỉnh
+sudo make install PREFIX=/usr/local
+```
+
+#### Gỡ cài đặt
+
+```bash
+# Gỡ cài đặt
+sudo make uninstall
+
+# Hoặc nếu đã cài đặt với PREFIX tùy chỉnh
+sudo make uninstall PREFIX=/usr/local
+```
+
+### 🎯 Các Package trong tương lai
+
+Chúng tôi đang lên kế hoạch phát hành các package chính thức cho các distro sau:
+
+| Distro        | Trạng thái      | Gói            |
+| ------------- | --------------- | -------------- |
+| Ubuntu/Debian | Đang phát triển | `.deb`         |
+| Fedora/RHEL   | Đang phát triển | `.rpm`         |
+| openSUSE      | Đang phát triển | `.rpm`         |
+| NixOS         | Đang phát triển | Nix expression |
+
+Nếu bạn muốn đóng góp vào việc đóng gói cho distro của mình, vui lòng mở một Pull Request hoặc Issue.
+
+---
+
+## 📖 Hướng dẫn sử dụng
+
+### 1. Menu Chuyển Mode Nhanh
+
+Khi đang ở trong bất kỳ ứng dụng nào, nhấn phím:
+
+```
+` (Phím dấu huyền)
+```
+
+Menu sẽ hiện ra cho phép bạn chọn số từ 1-7:
+
+- **Mode 1 (Uinput):** Chế độ mặc định, tương thích tốt nhất (dùng server gửi phím xóa).
+- **Mode 2 (Surrounding Text):** Dùng cơ chế xóa ký tự của ứng dụng (Tương tự Unikey).
+- **Mode 3 (Preedit):** Hiện gạch chân, an toàn nhưng không tự nhiên bằng Mode 1.
+- **Mode 4 (Hardcore):** Tốc độ cao nhất.
+- **OFF:** Tắt bộ gõ cho ứng dụng này.
+- **Xóa thiết lập cho app:** Quay về dùng cấu hình mặc định.
+- **Tắt menu và gõ phím `:** Thoát menu và in ký tự dấu huyền.
+
+### 2. Cơ chế Reset thông minh
+
+Khi bạn click chuột hoặc chạm vào touchpad để đổi vị trí nhập liệu, bộ gõ sẽ tự động Reset trạng thái ngay lập tức. Điều này giúp tránh lỗi dính chữ cũ vào từ mới (một lỗi rất phổ biến trên các bộ gõ Linux khác).
+
+---
+
+## 🙏 Lời cảm ơn (Credits)
+
+Dự án này được phát triển dựa trên ý tưởng và mã nguồn gốc của tác giả Thành (tác giả gốc của VMK).
+
+Chân thành cảm ơn tác giả đã đặt nền móng cho một bộ gõ tiếng Việt gọn nhẹ trên Linux.
+
+---
+
+## 📄 License
+
+[GPL-3.0-or-later](LICENSE)
+
+---
+
+## 🔗 Liên kết
+
+- **GitHub Repository:** https://github.com/nhktmdzhg/VMK
+- **Báo lỗi:** https://github.com/nhktmdzhg/VMK/issues
+- **AUR Package:** https://aur.archlinux.org/packages/fcitx5-vmk-git
