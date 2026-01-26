@@ -72,6 +72,9 @@ Bạn có thể cài đặt fcitx5-vmk thông qua Open Build Service (OBS), nơi
 
 Truy cập trang [Open Build Service](https://software.opensuse.org//download.html?project=home%3Aiamnanoka&package=fcitx5-vmk) để xem hướng dẫn cài đặt chi tiết cho distro của bạn.
 
+[![build result](https://build.opensuse.org/projects/home:iamnanoka/packages/fcitx5-vmk/badge.svg?type=percent)](https://build.opensuse.org/package/show/home:iamnanoka/fcitx5-vmk)
+[![build result](https://build.opensuse.org/projects/home:iamnanoka/packages/fcitx5-vmk/badge.svg?type=default)](https://build.opensuse.org/package/show/home:iamnanoka/fcitx5-vmk)
+
 #### Cách 2: Biên dịch từ mã nguồn (Build from source)
 
 Nếu bạn muốn biên dịch từ mã nguồn, hãy làm theo các bước sau:

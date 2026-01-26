@@ -37,7 +37,8 @@ jobs:
           g++ \
           golang \
           hicolor-icon-theme \
-          pkg-config
+          pkg-config \
+          libx11-dev
       
     - name: Create tarball structure
       run: |
