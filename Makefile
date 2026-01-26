@@ -11,8 +11,8 @@ UDEVDIR = $(PREFIX)/lib/udev/rules.d
 MODULESLOADDIR = $(PREFIX)/lib/modules-load.d
 SYSUSERSDIR = $(PREFIX)/lib/sysusers.d
 
-BUILD_DIR = fcitx5-vmk/build
-SERVER_BINARY = fcitx5-vmk-server
+BUILD_DIR = addon/build
+SERVER_BINARY = server/fcitx5-vmk-server
 
 CXXFLAGS += -O3 -Wall -Wextra -std=c++17 $(shell pkg-config --cflags libinput libudev)
 LDFLAGS  += $(shell pkg-config --libs libinput libudev) -Wl,-z,relro -Wl,-z,now
@@ -56,7 +56,7 @@ build:
 	@$(MAKE) -C $(BUILD_DIR)
 	@echo "$(GREEN)✓ Biên dịch Addon thành công!$(NC)"
 	@echo "$(BLUE)Đang biên dịch Fcitx5 VMK Server...$(NC)"
-	@g++ $(CXXFLAGS) fcitx5-vmk-server.cpp -o $(SERVER_BINARY) $(LDFLAGS)
+	@g++ $(CXXFLAGS) server/src/fcitx5-vmk-server.cpp -o $(SERVER_BINARY) $(LDFLAGS)
 	@echo "$(GREEN)✓ Biên dịch Server thành công!$(NC)"
 	@echo "$(GREEN)✓ Biên dịch hoàn tất!$(NC)"
 
@@ -69,15 +69,15 @@ install: build
 	
 	@# Cài đặt cấu hình input method
 	@echo "$(YELLOW)  - Cài đặt cấu hình input method...$(NC)"
-	@install -Dm644 fcitx5-vmk/src/vmk.conf.in $(DESTDIR)$(FCITX5_DATADIR)/inputmethod/vmk.conf
+	@install -Dm644 addon/config/inputmethod/vmk.conf.in $(DESTDIR)$(FCITX5_DATADIR)/inputmethod/vmk.conf
 	
 	@# Cài đặt cấu hình addon
 	@echo "$(YELLOW)  - Cài đặt cấu hình addon...$(NC)"
-	@install -Dm644 fcitx5-vmk/src/vmk-addon.conf.in.in $(DESTDIR)$(FCITX5_DATADIR)/addon/vmk.conf
+	@install -Dm644 addon/config/inputmethod/vmk-addon.conf.in.in $(DESTDIR)$(FCITX5_DATADIR)/addon/vmk.conf
 	
 	@# Cài đặt metainfo
 	@echo "$(YELLOW)  - Cài đặt metainfo...$(NC)"
-	@install -Dm644 fcitx5-vmk/org.fcitx.Fcitx5.Addon.VMK.metainfo.xml.in \
+	@install -Dm644 addon/config/metainfo/org.fcitx.Fcitx5.Addon.VMK.metainfo.xml.in \
 		$(DESTDIR)$(METAINFODIR)/org.fcitx.Fcitx5.Addon.VMK.metainfo.xml
 	
 	@# Cài đặt systemd service
@@ -103,14 +103,14 @@ install: build
 	
 	@# Cài đặt icon
 	@echo "$(YELLOW)  - Cài đặt icon...$(NC)"
-	@install -Dm644 fcitx5-vmk/data/scalable/apps/fcitx-vmk.svg \
+	@install -Dm644 addon/data/icons/scalable/apps/fcitx-vmk.svg \
 		$(DESTDIR)$(ICONDIR)/fcitx-vmk.svg
-	@install -Dm644 fcitx5-vmk/data/scalable/apps/org.fcitx.Fcitx5.fcitx-vmk.svg \
+	@install -Dm644 addon/data/icons/scalable/apps/org.fcitx.Fcitx5.fcitx-vmk.svg \
 		$(DESTDIR)$(ICONDIR)/org.fcitx.Fcitx5.fcitx-vmk.svg
 	
 	@# Cài đặt từ điển
 	@echo "$(YELLOW)  - Cài đặt từ điển...$(NC)"
-	@install -Dm644 fcitx5-vmk/data/vietnamese.cm.dict \
+	@install -Dm644 addon/data/dictionaries/vietnamese.cm.dict \
 		$(DESTDIR)$(FCITX5_DATADIR)/vmk/vietnamese.cm.dict
 	
 	@# Cài đặt license

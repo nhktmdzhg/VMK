@@ -75,7 +75,7 @@ Truy cập trang [Open Build Service](https://software.opensuse.org//download.ht
 [![build result](https://build.opensuse.org/projects/home:iamnanoka/packages/fcitx5-vmk/badge.svg?type=percent)](https://build.opensuse.org/package/show/home:iamnanoka/fcitx5-vmk)
 [![build result](https://build.opensuse.org/projects/home:iamnanoka/packages/fcitx5-vmk/badge.svg?type=default)](https://build.opensuse.org/package/show/home:iamnanoka/fcitx5-vmk)
 
-> Lưu ý: Arch và Arch-based distro có thể sử dụng cả 2 cách cài này.
+> Lưu ý: Arch và Arch-based distro cũng có thể dùng cách cài này.
 
 #### Cách 2: Biên dịch từ mã nguồn (Build from source)
 

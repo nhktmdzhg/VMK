@@ -23,14 +23,14 @@ add_definitions(-DFCITX_GETTEXT_DOMAIN=\"fcitx5-vmk\")
 # nếu bạn chưa kịp xóa dòng registerDomain trong file .h/.cpp
 add_definitions(-DFCITX_INSTALL_LOCALEDIR=\"\")
 
-add_subdirectory(bamboo)
+add_subdirectory(engine)
 add_subdirectory(src)
 add_subdirectory(data)
 
 # 4. Thay vì dùng fcitx5_translate_desktop_file (yêu cầu thư mục po)
 # Ta chỉ copy file .in thành file .xml để cài đặt
-configure_file(org.fcitx.Fcitx5.Addon.VMK.metainfo.xml.in
-    org.fcitx.Fcitx5.Addon.VMK.metainfo.xml COPYONLY)
+configure_file(config/metainfo/org.fcitx.Fcitx5.Addon.VMK.metainfo.xml.in
+    config/metainfo/org.fcitx.Fcitx5.Addon.VMK.metainfo.xml COPYONLY)
 
 # 5. Cài đặt Metainfo File
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/org.fcitx.Fcitx5.Addon.VMK.metainfo.xml" 
