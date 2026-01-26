@@ -123,6 +123,96 @@ sudo make uninstall PREFIX=/usr/local
 
 ---
 
+## ⚙️ Bật Bộ Gõ
+
+Sau khi cài đặt xong, bạn cần thực hiện các bước sau để bật bộ gõ VMK:
+
+### 1. Bật VMK Server
+
+```bash
+# Bật và khởi động service
+sudo systemctl enable --now fcitx5-vmk-server@$(whoami).service
+
+# Kiểm tra status
+systemctl status fcitx5-vmk-server@$(whoami).service
+```
+
+Nếu service bị **failed**, hãy chạy lệnh sau để tạo user systemd cần thiết:
+
+```bash
+sudo systemd-sysusers
+```
+
+Sau đó thử bật lại service:
+
+```bash
+sudo systemctl enable --now fcitx5-vmk-server@$(whoami).service
+```
+
+### 2. Thoát hoàn toàn IBus (nếu có)
+
+Nếu hệ thống của bạn đang sử dụng IBus, hãy thoát hoàn toàn trước khi chuyển sang Fcitx5:
+
+```bash
+# Kill ibus-daemon
+killall ibus-daemon
+# Hoặc
+ibus exit
+```
+
+### 3. Thiết lập biến môi trường
+
+Export các biến môi trường sau vào file cấu hình shell của bạn (`~/.bashrc`, `~/.zshrc`, hoặc `~/.profile`):
+
+```bash
+# Thêm vào ~/.bash_profile, ~/.zprofile, hoặc ~/.profile
+export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
+export XMODIFIERS=@im=fcitx
+```
+
+### 4. Thêm Fcitx5 vào Autostart
+
+Tùy thuộc vào Desktop Environment/Window Manager và Distro của bạn:
+
+- **GNOME:** GNOME Tweak -> Startup Applications -> Add -> `fcitx5`
+- **KDE Plasma:** System Settings -> Startup and Shutdown -> Autostart -> Add... -> Add application... -> `fcitx5`
+- **Xfce:** Settings -> Session and Startup -> Application Autostart -> Add -> `fcitx5`
+- **i3/Sway:** Thêm `exec fcitx5 -d` vào file cấu hình (`~/.config/i3/config` hoặc `~/.config/sway/config`)
+- **Hyprland:** Thêm `exec-once = fcitx5 -d` vào `~/.config/hypr/hyprland.conf`
+
+> **Lưu ý:** Hãy xóa autostart của IBus nếu có (thường là `ibus-daemon` hoặc `ibus`).
+
+### 5. Log out / Login
+
+Để các thay đổi có hiệu lực, bạn cần log out và login lại vào hệ thống.
+
+### 6. Cấu hình Fcitx5
+
+Sau khi login lại:
+
+1. Mở **Fcitx5 Configuration**:
+
+   ```bash
+   fcitx5-configtool
+   ```
+
+2. Trong tab **Input Method**
+
+3. Tìm và chọn **VMK** trong danh sách.
+
+4. Nhấn **<-** để thêm vào danh sách bộ gõ.
+
+### 7. Lưu ý cho Wayland (KDE)
+
+Nếu bạn sử dụng **Wayland** trên KDE Plasma, bạn cần thêm **Virtual Keyboard**:
+
+- **KDE Plasma (Wayland):** System Settings -> Keyboard -> Virtual Keyboard -> Fcitx 5
+
+Điều này cần thiết vì trên Wayland, Fcitx5 không thể hoạt động như X11.
+
+---
+
 ## 📖 Hướng dẫn sử dụng
 
 ### 1. Menu Chuyển Mode Nhanh
