@@ -133,6 +133,10 @@ public:
   void updateModeAction(InputContext *ic);
     void updateSpellAction(InputContext *ic);
     void updateMacroAction(InputContext *ic);
+    void updateCapitalizeMacroAction(InputContext *ic);
+    void updateAutoNonVnRestoreAction(InputContext *ic);
+    void updateModernStyleAction(InputContext *ic);
+    void updateFreeMarkingAction(InputContext *ic);
     void updateInputMethodAction(InputContext *ic);
     void updateCharsetAction(InputContext *ic);
 void updateGeminiAction(InputContext *ic); // <--- THÊM DÒNG NÀY VÀO DÒNG 138
@@ -169,9 +173,13 @@ std::unique_ptr<fcitx::SimpleAction> modeAction_;
     
     std::unique_ptr<SimpleAction> spellCheckAction_;
     std::unique_ptr<SimpleAction> macroAction_;
+    std::unique_ptr<SimpleAction> capitalizeMacroAction_;
+    std::unique_ptr<SimpleAction> autoNonVnRestoreAction_;
+    std::unique_ptr<SimpleAction> modernStyleAction_;
+    std::unique_ptr<SimpleAction> freeMarkingAction_;
     std::unique_ptr<SimpleAction> geminiAction_;
     std::vector<ScopedConnection> connections_;
-std::unique_ptr<SimpleAction> chromeX11Action_; 
+    std::unique_ptr<SimpleAction> chromeX11Action_;
     CGoObject dictionary_;
     // ibus-bamboo mode save/load
     std::unordered_map<std::string, std::string> appRules_;

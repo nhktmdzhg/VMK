@@ -235,14 +235,14 @@ public:
     void setOption() {
         if (!vmkEngine_) return;
         FcitxBambooEngineOption option = {
-            .autoNonVnRestore = false,
+            .autoNonVnRestore = *engine_->config().autoNonVnRestore,
             .ddFreeStyle = true,
-            .macroEnabled = false,
-            .autoCapitalizeMacro = false,
-            .spellCheckWithDicts = false,
+            .macroEnabled = *engine_->config().macro,
+            .autoCapitalizeMacro = *engine_->config().capitalizeMacro,
+            .spellCheckWithDicts = *engine_->config().spellCheck,
             .outputCharset = engine_->config().outputCharset->data(),
-            .modernStyle = false,
-            .freeMarking = true,
+            .modernStyle = *engine_->config().modernStyle,
+            .freeMarking = *engine_->config().freeMarking,
         };
         EngineSetOption(vmkEngine_.handle(), &option);
     }
@@ -894,11 +894,11 @@ vmkEngine::vmkEngine(Instance *instance)
     inputMethodMenu_ = std::make_unique<Menu>();
     inputMethodAction_->setMenu(inputMethodMenu_.get());
 
-    const std::vector<std::string_view> allowedIMs = {"Telex", "VNI", "Telex W"};
+    // const std::vector<std::string_view> allowedIMs = {"Telex", "VNI", "Telex W"};
     for (const auto &imName : imNames_) {
-        bool isAllowed = false;
-        for (const auto &allowedName : allowedIMs) if (imName == allowedName) { isAllowed = true; break; }
-        if (!isAllowed) continue;
+        // bool isAllowed = false;
+        // for (const auto &allowedName : allowedIMs) if (imName == allowedName) { isAllowed = true; break; }
+        // if (!isAllowed) continue;
         inputMethodSubAction_.emplace_back(std::make_unique<SimpleAction>());
         auto action = inputMethodSubAction_.back().get();
         action->setShortText(imName); action->setCheckable(true);
@@ -919,11 +919,11 @@ vmkEngine::vmkEngine(Instance *instance)
     charsetAction_->setMenu(charsetMenu_.get());
 
     auto charsets = convertToStringList(GetCharsetNames());
-    const std::vector<std::string_view> allowedCharsets = {"Unicode", "TCVN3 (ABC)", "VNI Windows"};
+    // const std::vector<std::string_view> allowedCharsets = {"Unicode", "TCVN3 (ABC)", "VNI Windows"};
     for (const auto &charset : charsets) {
-        bool isAllowed = false;
-        for (const auto &allowedName : allowedCharsets) if (charset == allowedName) { isAllowed = true; break; }
-        if (!isAllowed) continue;
+        // bool isAllowed = false;
+        // for (const auto &allowedName : allowedCharsets) if (charset == allowedName) { isAllowed = true; break; }
+        // if (!isAllowed) continue;
         charsetSubAction_.emplace_back(std::make_unique<SimpleAction>());
         auto action = charsetSubAction_.back().get();
         action->setShortText(charset); action->setCheckable(true);
@@ -937,21 +937,101 @@ vmkEngine::vmkEngine(Instance *instance)
     }
     config_.outputCharset.annotation().setList(charsets);
 
+    spellCheckAction_ = std::make_unique<SimpleAction>();
+    spellCheckAction_->setLongText(_("Enable spell check"));
+    spellCheckAction_->setIcon("tools-check-spelling");
+    spellCheckAction_->setCheckable(true);
+    connections_.emplace_back(spellCheckAction_->connect<SimpleAction::Activated>(
+        [this](InputContext *ic) {
+            config_.spellCheck.setValue(!*config_.spellCheck);
+            saveConfig();
+            refreshOption();
+            updateSpellAction(ic);
+        }));
+    uiManager.registerAction("vmk-spellcheck", spellCheckAction_.get());
+
+    macroAction_ = std::make_unique<SimpleAction>();
+    macroAction_->setLongText(_("Enable Macro"));
+    macroAction_->setIcon("document-edit");
+    macroAction_->setCheckable(true);
+    connections_.emplace_back(macroAction_->connect<SimpleAction::Activated>(
+        [this](InputContext *ic) {
+            config_.macro.setValue(!*config_.macro);
+            saveConfig();
+            refreshOption();
+            updateMacroAction(ic);
+        }));
+    uiManager.registerAction("vmk-macro", macroAction_.get());
+
+    capitalizeMacroAction_ = std::make_unique<SimpleAction>();
+    capitalizeMacroAction_->setLongText(_("Capitalize Macro"));
+    capitalizeMacroAction_->setIcon("format-text-uppercase");
+    capitalizeMacroAction_->setCheckable(true);
+    connections_.emplace_back(capitalizeMacroAction_->connect<SimpleAction::Activated>(
+        [this](InputContext *ic) {
+            config_.capitalizeMacro.setValue(!*config_.capitalizeMacro);
+            saveConfig();
+            refreshOption();
+            updateCapitalizeMacroAction(ic);
+        }));
+    uiManager.registerAction("vmk-capitalizemacro", capitalizeMacroAction_.get());
+
+    autoNonVnRestoreAction_ = std::make_unique<SimpleAction>();
+    autoNonVnRestoreAction_->setLongText(_("Auto restore keys with invalid words"));
+    autoNonVnRestoreAction_->setIcon("edit-undo");
+    autoNonVnRestoreAction_->setCheckable(true);
+    connections_.emplace_back(autoNonVnRestoreAction_->connect<SimpleAction::Activated>(
+        [this](InputContext *ic) {
+            config_.autoNonVnRestore.setValue(!*config_.autoNonVnRestore);
+            saveConfig();
+            refreshOption();
+            updateAutoNonVnRestoreAction(ic);
+        }));
+    uiManager.registerAction("vmk-autonvnrestore", autoNonVnRestoreAction_.get());
+
+    modernStyleAction_ = std::make_unique<SimpleAction>();
+    modernStyleAction_->setLongText(_("Use oà, _uý (instead of òa, úy)"));
+    modernStyleAction_->setIcon("text-x-generic");
+    modernStyleAction_->setCheckable(true);
+    connections_.emplace_back(modernStyleAction_->connect<SimpleAction::Activated>(
+        [this](InputContext *ic) {
+            config_.modernStyle.setValue(!*config_.modernStyle);
+            saveConfig();
+            refreshOption();
+            updateModernStyleAction(ic);
+        }));
+    uiManager.registerAction("vmk-modernstyle", modernStyleAction_.get());
+
+    freeMarkingAction_ = std::make_unique<SimpleAction>();
+    freeMarkingAction_->setLongText(_("Allow type with more freedom"));
+    freeMarkingAction_->setIcon("document-open-recent");
+    freeMarkingAction_->setCheckable(true);
+    connections_.emplace_back(freeMarkingAction_->connect<SimpleAction::Activated>(
+        [this](InputContext *ic) {
+            config_.freeMarking.setValue(!*config_.freeMarking);
+            saveConfig();
+            refreshOption();
+            updateFreeMarkingAction(ic);
+        }));
+    uiManager.registerAction("vmk-freemarking", freeMarkingAction_.get());
+
     geminiAction_ = std::make_unique<SimpleAction>();
     geminiAction_->setLongText(_("Sửa lỗi gõ trên Chrome RichText"));
-    geminiAction_->setIcon("tools-wizard"); 
+    geminiAction_->setIcon("tools-wizard");
+    geminiAction_->setCheckable(true);
     
     connections_.emplace_back(geminiAction_->connect<SimpleAction::Activated>(
         [this](InputContext *ic) {
             config_.gemini.setValue(!*config_.gemini);
             saveConfig();
-            refreshOption(); 
+            refreshOption();
             updateGeminiAction(ic);
         }));
     uiManager.registerAction("vmk-gemini", geminiAction_.get());
 chromeX11Action_ = std::make_unique<SimpleAction>();
 chromeX11Action_->setLongText(_("Sửa lỗi gõ trên Chrome (X11 Mode)"));
 chromeX11Action_->setIcon("applications-internet"); // Icon trình duyệt
+chromeX11Action_->setCheckable(true);
 
 connections_.emplace_back(chromeX11Action_->connect<SimpleAction::Activated>(
     [this](InputContext *ic) {
@@ -959,7 +1039,7 @@ connections_.emplace_back(chromeX11Action_->connect<SimpleAction::Activated>(
 config_.chromex11.setValue(!*config_.chromex11);
         saveConfig();
         
-        refreshOption(); 
+        refreshOption();
         updateChromeX11Action(ic);
     }));
 uiManager.registerAction("vmk-chromex11", chromeX11Action_.get());
@@ -996,7 +1076,7 @@ const Configuration *vmkEngine::getSubConfig(const std::string &path) const {
 
 void vmkEngine::setConfig(const RawConfig &config) { config_.load(config, true); saveConfig(); populateConfig(); }
 
-void vmkEngine::populateConfig() { refreshEngine(); refreshOption(); updateModeAction(nullptr); updateInputMethodAction(nullptr); updateCharsetAction(nullptr); updateGeminiAction(nullptr);updateChromeX11Action(nullptr); }
+void vmkEngine::populateConfig() { refreshEngine(); refreshOption(); updateModeAction(nullptr); updateInputMethodAction(nullptr); updateCharsetAction(nullptr); updateSpellAction(nullptr); updateMacroAction(nullptr); updateCapitalizeMacroAction(nullptr); updateAutoNonVnRestoreAction(nullptr); updateModernStyleAction(nullptr); updateFreeMarkingAction(nullptr); updateGeminiAction(nullptr); updateChromeX11Action(nullptr); }
 
 void vmkEngine::setSubConfig(const std::string &path, const RawConfig &config) {
     if (path == "custom_keymap") { customKeymap_.load(config, true); safeSaveAsIni(customKeymap_, CustomKeymapFile); refreshEngine(); }
@@ -1056,6 +1136,12 @@ void vmkEngine::activate(const InputMethodEntry &entry, InputContextEvent &event
     statusArea.addAction(StatusGroup::InputMethod, modeAction_.get());
     statusArea.addAction(StatusGroup::InputMethod, inputMethodAction_.get());
     statusArea.addAction(StatusGroup::InputMethod, charsetAction_.get());
+    statusArea.addAction(StatusGroup::InputMethod, spellCheckAction_.get());
+    statusArea.addAction(StatusGroup::InputMethod, macroAction_.get());
+    statusArea.addAction(StatusGroup::InputMethod, capitalizeMacroAction_.get());
+    statusArea.addAction(StatusGroup::InputMethod, autoNonVnRestoreAction_.get());
+    statusArea.addAction(StatusGroup::InputMethod, modernStyleAction_.get());
+    statusArea.addAction(StatusGroup::InputMethod, freeMarkingAction_.get());
     statusArea.addAction(StatusGroup::InputMethod, geminiAction_.get());
 statusArea.addAction(StatusGroup::InputMethod, chromeX11Action_.get());
 }
@@ -1213,6 +1299,60 @@ void vmkEngine::updateGeminiAction(InputContext *ic) {
                                               : _("Gemini Fix: Tắt"));
     if (ic) {
         geminiAction_->update(ic);
+    }
+}
+
+void vmkEngine::updateSpellAction(InputContext *ic) {
+    spellCheckAction_->setChecked(*config_.spellCheck);
+    spellCheckAction_->setShortText(*config_.spellCheck ? _("Spell Check: Bật")
+                                                   : _("Spell Check: Tắt"));
+    if (ic) {
+        spellCheckAction_->update(ic);
+    }
+}
+
+void vmkEngine::updateMacroAction(InputContext *ic) {
+    macroAction_->setChecked(*config_.macro);
+    macroAction_->setShortText(*config_.macro ? _("Macro: Bật")
+                                             : _("Macro: Tắt"));
+    if (ic) {
+        macroAction_->update(ic);
+    }
+}
+
+void vmkEngine::updateCapitalizeMacroAction(InputContext *ic) {
+    capitalizeMacroAction_->setChecked(*config_.capitalizeMacro);
+    capitalizeMacroAction_->setShortText(*config_.capitalizeMacro ? _("Capitalize Macro: Bật")
+                                                           : _("Capitalize Macro: Tắt"));
+    if (ic) {
+        capitalizeMacroAction_->update(ic);
+    }
+}
+
+void vmkEngine::updateAutoNonVnRestoreAction(InputContext *ic) {
+    autoNonVnRestoreAction_->setChecked(*config_.autoNonVnRestore);
+    autoNonVnRestoreAction_->setShortText(*config_.autoNonVnRestore ? _("Auto Non-VN Restore: Bật")
+                                                                     : _("Auto Non-VN Restore: Tắt"));
+    if (ic) {
+        autoNonVnRestoreAction_->update(ic);
+    }
+}
+
+void vmkEngine::updateModernStyleAction(InputContext *ic) {
+    modernStyleAction_->setChecked(*config_.modernStyle);
+    modernStyleAction_->setShortText(*config_.modernStyle ? _("Modern Style: Bật")
+                                                          : _("Modern Style: Tắt"));
+    if (ic) {
+        modernStyleAction_->update(ic);
+    }
+}
+
+void vmkEngine::updateFreeMarkingAction(InputContext *ic) {
+    freeMarkingAction_->setChecked(*config_.freeMarking);
+    freeMarkingAction_->setShortText(*config_.freeMarking ? _("Free Marking: Bật")
+                                                          : _("Free Marking: Tắt"));
+    if (ic) {
+        freeMarkingAction_->update(ic);
     }
 }
 void vmkEngine::updateChromeX11Action(InputContext *ic) {

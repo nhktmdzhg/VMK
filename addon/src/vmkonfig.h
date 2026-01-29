@@ -124,19 +124,17 @@ OptionWithAnnotation<std::string, StringListAnnotation> outputCharset{
         {}, 
         // 7. Annotation
         StringListAnnotation()}; 
- //   Option<bool> spellCheck{this, "SpellCheck", _("Enable spell check"), true};
-   // Option<bool> macro{this, "Macro", _("Enable Macro"), true};
-  //  Option<bool> capitalizeMacro{this, "CapitalizeMacro", _("Capitalize Macro"),
-                        //         true};
-    //Option<bool> autoNonVnRestore{this, "AutoNonVnRestore",
-                                 // _("Auto restore keys with invalid words"),
-                                 // true};
-  // Option<bool> modernStyle{this, "ModernStyle",
-                      //   _("Use oà, _uý (instead of òa, úy)"), false};
-  //  Option<bool> freeMarking{this, "FreeMarking",
-                            // _("Allow type with more freedom"), true};
-    // Option<bool> displayUnderline{this, "DisplayUnderline",
-                              //    _("Underline the preedit text"), true};
+    Option<bool> spellCheck{this, "SpellCheck", _("Enable spell check"), true};
+    Option<bool> macro{this, "Macro", _("Enable Macro"), true};
+    Option<bool> capitalizeMacro{this, "CapitalizeMacro", _("Capitalize Macro"),
+                         true};
+    Option<bool> autoNonVnRestore{this, "AutoNonVnRestore",
+                                  _("Auto restore keys with invalid words"),
+                                  true};
+    Option<bool> modernStyle{this, "ModernStyle",
+                       _("Use oà, _uý (instead of òa, úy)"), false};
+    Option<bool> freeMarking{this, "FreeMarking",
+                             _("Allow type with more freedom"), true};
    // SubConfigOption custumKeymap{this, "CustomKeymap", _("Custom Keymap"),
                                  // ĐỔI TÊN PATH
                                //  "fcitx://config/addon/vmk/custom_keymap"};

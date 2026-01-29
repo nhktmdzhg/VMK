@@ -120,6 +120,8 @@ Truy cập trang [Open Build Service](https://software.opensuse.org//download.ht
 
 #### Cách 2: Biên dịch từ mã nguồn (Build from source)
 
+(Không khuyến khích các bạn cài bằng cách này nếu không hiểu rõ cấu trúc thư mục của distro của bạn, vì ta cần set đúng LIBDIR thì vmk mới có thể chạy được)
+
 Nếu bạn muốn biên dịch từ mã nguồn, hãy làm theo các bước sau:
 
 ##### Yêu cầu hệ thống
@@ -146,7 +148,8 @@ cd VMK
 make build
 
 # Cài đặt (cần quyền root)
-sudo make install
+sudo make install LIBDIR=/usr/lib
+# LIBDIR tùy vào distro, thường là /usr/lib, nhưng chưa chắc distro nào cũng vậy, ví dụ như debian thì chơi kiểu khác với Arch
 
 # Hoặc cài đặt vào thư mục tùy chỉnh
 sudo make install PREFIX=/usr/local
@@ -244,11 +247,12 @@ Sau khi login lại:
 
 4. Nhấn **<-** để thêm vào danh sách bộ gõ.
 
-### 7. Lưu ý cho Wayland (KDE)
+### 7. Lưu ý cho Wayland (KDE và Hyprland)
 
-Nếu bạn sử dụng **Wayland** trên KDE Plasma, bạn cần thêm **Virtual Keyboard**:
+Nếu bạn sử dụng **Wayland** trên KDE Plasma hoặc Hyprland, bạn cần thêm **Virtual Keyboard**:
 
 - **KDE Plasma (Wayland):** System Settings -> Keyboard -> Virtual Keyboard -> Fcitx 5
+- **Hyprland:** thêm `permission = fcitx5-vmk-server, keyboard, allow` vào `~/.config/hypr/hyprland.conf`
 
 Điều này cần thiết vì trên Wayland, Fcitx5 không thể hoạt động như X11.
 
