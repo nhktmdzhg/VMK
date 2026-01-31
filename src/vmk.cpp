@@ -80,7 +80,40 @@ int                      uinput_fd_        = -1;
 int                      uinput_client_fd_ = -1;
 int                      extraBackspace    = 0;
 
-std::string              buildSocketPath(const char* base_path_suffix) {
+size_t                   utf8Len(const std::string& s) {
+    size_t count = 0;
+    for (unsigned char c : s)
+        if ((c & 0xC0) != 0x80)
+            ++count;
+    return count;
+}
+
+static bool isLikelyInAutoSuggest(fcitx::InputContext* ic) {
+    if (!ic)
+        return false;
+
+    auto surrounding = ic->surroundingText();
+    if (!surrounding.isValid())
+        return false;
+
+    const auto& text    = surrounding.text();
+    int         cursor  = surrounding.cursor();
+    size_t      textLen = utf8Len(text);
+
+    if (cursor <= 0) {
+        return false;
+    }
+    // If text length is larger than cursor position,
+    // it means there's auto-suggested text after the cursor
+    // Example: cursor=2, text_len=22 means 20 chars of suggestion
+    if (textLen > static_cast<size_t>(cursor)) {
+        return true;
+    }
+
+    return false;
+}
+
+std::string buildSocketPath(const char* base_path_suffix) {
     const char* username_c = std::getenv("USER");
     std::string username   = username_c ? std::string(username_c) : "default";
     std::string path       = "vmksocket-" + username + "-" + std::string(base_path_suffix);
@@ -448,8 +481,15 @@ namespace fcitx {
                             }
                             return;
                         }
-                        if (isAutofillCertain(ic_->surroundingText()))
+
+                        bool inAutoSuggest = isLikelyInAutoSuggest(ic_);
+                        if (inAutoSuggest) {
+                            // When auto-suggest is active, first backspace deletes suggestion,
+                            // second backspace deletes the actual character
                             extraBackspace = 1;
+                        } else if (isAutofillCertain(ic_->surroundingText())) {
+                            extraBackspace = 1;
+                        }
 
                         if (is_deleting_.load()) {
                             is_deleting_.store(false);
@@ -1093,6 +1133,7 @@ namespace fcitx {
             state->clearAllBuffers();
             is_deleting_.store(false);
             needEngineReset.store(false);
+            event.inputContext()->updateSurroundingText();
             event.inputContext()->inputPanel().reset();
             event.inputContext()->updateUserInterface(UserInterfaceComponent::InputPanel);
             event.inputContext()->updatePreedit();
