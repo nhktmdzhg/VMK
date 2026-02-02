@@ -46,7 +46,7 @@ Fork repository này trên GitHub và clone fork của bạn về máy.
 
 ```bash
 git clone https://github.com/yourusername/VMK.git
-cd fcitx5-vmk
+cd VMK
 git remote add upstream https://github.com/nhktmdzhg/VMK.git
 ```
 
