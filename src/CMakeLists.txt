@@ -9,6 +9,7 @@ target_link_libraries(vmk
 	Fcitx5::Config
 	Bamboo::Core
 	Pthread::Pthread
+	X11::X11
 )
 
 target_include_directories(vmk PRIVATE

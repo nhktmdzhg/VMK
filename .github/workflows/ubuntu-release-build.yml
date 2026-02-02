@@ -40,7 +40,8 @@ jobs:
           golang \
           hicolor-icon-theme \
           pkg-config \
-          gettext
+          gettext \
+          libx11-dev
 
     - name: Create tarball structure
       run: |
