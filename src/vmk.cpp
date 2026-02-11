@@ -76,6 +76,7 @@ std::once_flag           monitor_init_flag;
 std::atomic<bool>        stop_flag_monitor{false};
 std::atomic<bool>        monitor_running{false};
 int                      uinput_client_fd_ = -1;
+int                      realtextLen       = 0;
 
 std::atomic<int64_t>     replacement_start_ms_{0};
 std::atomic<int>         replacement_thread_id_{0};
@@ -84,7 +85,8 @@ std::atomic<bool>        needFallbackCommit{false};
 std::mutex               monitor_mutex;
 std::condition_variable  monitor_cv;
 
-std::string              buildSocketPath(const char* base_path_suffix) {
+//
+std::string buildSocketPath(const char* base_path_suffix) {
     const char* username_c = std::getenv("USER");
     std::string path;
     path.reserve(32);
@@ -325,6 +327,7 @@ namespace fcitx {
             int cursor = s.cursor();
             int anchor = s.anchor();
 
+            // This alway is false
             if (cursor != anchor) {
                 int selectionStart = std::min(anchor, cursor);
                 int selectionEnd   = std::max(anchor, cursor);
@@ -333,6 +336,34 @@ namespace fcitx {
                     return true;
                 }
             }
+
+            const auto& text    = s.text();
+            size_t      textLen = fcitx_utf8_strlen(text.c_str());
+
+            // Guard?
+            // if (textLen <= static_cast<size_t>(realtextLen))
+            //     realtextLen = textLen;
+
+            if (textLen == static_cast<size_t>(cursor)) {
+                realtextLen = textLen;
+                return false;
+            }
+
+            // Text exists after cursor AND cursor is exactly where we expected
+            // (realtextLen tracks where cursor should be after our last commit).
+            // This is the only reliable signal that the app appended a suggestion.
+            // why -1?? cuz some SurroundingText is only update on event
+            // so when u type "12345" surronding text is "1234" it will
+            // update to "12345" when next u type "6" so this will make
+            // work correctly when cursor in the middle of the string
+            // Failed with:
+            //              a.com[/] + 's' -> a.coóm // Bad
+            //              a.co[m/] + 's' -> a.có   // Good
+            if (textLen - 1 > static_cast<size_t>(cursor) && cursor == realtextLen)
+                return true;
+
+            if (realtextLen < cursor)
+                realtextLen = cursor;
 
             return false;
         }
@@ -678,6 +709,8 @@ namespace fcitx {
             checkForwardSpecialKey(keyEvent, currentSym);
             if (is_deleting_.load(std::memory_order_acquire)) {
                 if (isBackspace(currentSym)) {
+                    if (realtextLen > 0)
+                        realtextLen -= 1;
                     if (handleUInputKeyPress(keyEvent, currentSym, sleepTime)) {
                         return;
                     }
@@ -747,6 +780,8 @@ namespace fcitx {
             }
 
             history_ += keyUtf8;
+            realtextLen += 1;
+
             replayBufferToEngine(history_);
 
             auto commitAfterReplay = UniqueCPtr<char>(EnginePullCommit(vmkEngine_.handle()));
@@ -984,6 +1019,56 @@ namespace fcitx {
         }
 
         void reset() {
+            // TODO: This will report wrong when use mouse
+            // click into the url bar that will select the cursor
+            // pos now is 0 and realtextLen = textLen. Then the text
+            // is select this not suggestion so can't sent 2 backspace
+            // But in other case if click to the url bar in the first
+            // place cursor pos is 0 and realtextLen = textLen too.
+            // So we need get value of SurroundingText::selectedText()
+            // but maybe can use that cus cursor alway = anchor in this
+            // code base in vmk1 mode
+            //
+            // https://github.com/fcitx/fcitx5/blob/master/src/lib/fcitx/surroundingtext.cpp
+            /*
+              std::string SurroundingText::selectedText() const {
+                FCITX_D();
+                auto start = std::min(anchor(), cursor());
+                auto end = std::max(anchor(), cursor());
+                auto len = end - start;
+                if (len == 0)
+                    return {};
+                auto startIter = utf8::nextNChar(d->text_.begin(), start);
+                auto endIter = utf8::nextNChar(startIter, len);
+                return std::string(startIter, endIter);
+              }
+              void SurroundingText::setText(const std::string &text, unsigned int cursor, unsigned int anchor) {
+                FCITX_D();
+                auto length = utf8::lengthValidated(text);
+                if (length == utf8::INVALID_LENGTH || length < cursor || length < anchor) {
+                    invalidate();
+                    return;
+                }
+                d->valid_ = true;
+                d->text_ = text;
+                d->cursor_ = cursor;
+                d->anchor_ = anchor;
+                d->utf8Length_ = length;
+            }
+            void SurroundingText::setCursor(unsigned int cursor, unsigned int anchor) {
+                FCITX_D();
+                if (d->utf8Length_ < cursor || d->utf8Length_ < anchor) {
+                    invalidate();
+                    return;
+                }
+                d->cursor_ = cursor;
+                d->anchor_ = anchor;
+            }
+            */
+
+            const auto& text    = (ic_->surroundingText()).text();
+            size_t      textLen = fcitx_utf8_strlen(text.c_str());
+            realtextLen         = textLen;
             if (is_deleting_.load(std::memory_order_acquire)) {
                 return;
             }
@@ -1577,6 +1662,12 @@ namespace fcitx {
         }
         auto state = keyEvent.inputContext()->propertyFor(&factory_);
         state->keyEvent(keyEvent);
+        auto        s       = ic->surroundingText();
+        const auto& text    = s.text();
+        size_t      textLen = fcitx_utf8_strlen(text.c_str());
+        int         cursor  = s.cursor();
+        if (textLen == static_cast<size_t>(cursor))
+            realtextLen = static_cast<int>(textLen);
     }
 
     void vmkEngine::reset(const InputMethodEntry& entry, InputContextEvent& event) {
