@@ -1,58 +1,45 @@
-# Fcitx5 VMK (Optimized Fork)
+<a name="readme-top"></a>
 
-**Bộ gõ tiếng Việt đơn giản, hiệu năng cao dành cho Fcitx5.**
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![License][license-shield]][license-url]
 
-Dự án này là một bản fork được tối ưu hóa từ bộ gõ VMK gốc.
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <a href="https://github.com/linux-l10n-vi/VMK">
+    <img src="data/icons/scalable/apps/fcitx-vmk.svg" alt="Logo" width="80" height="80">
+  </a>
 
-> **Lưu ý:** Phiên bản này đã loại bỏ công cụ cấu hình cũ viết bằng FLTK. Mọi cấu hình giờ đây được thực hiện trực tiếp qua giao diện chuẩn của Fcitx5 hoặc qua Menu phím tắt mới.
+  <h3 align="center">Fcitx5 VMK (Nanoka)</h3>
 
----
+  <p align="center">
+    Bộ gõ tiếng Việt đơn giản, hiệu năng cao dành cho Fcitx5.
+    <br />
+    <a href="#-cài-đặt"><strong>Cài đặt »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/nhktmdzhg/VMK/issues">Báo lỗi</a>
+    &middot;
+    <a href="https://github.com/nhktmdzhg/VMK/issues">Yêu cầu tính năng</a>
+    &middot;
+    <a href="https://software.opensuse.org//download.html?project=home%3Aiamnanoka&package=fcitx5-vmk">Open Build Service</a>
+  </p>
+</div>
 
-## 🚀 Các Cải Tiến Nổi Bật (Changelog)
+Dự án này là một bản fork được tối ưu hóa từ bộ gõ VMK gốc. Chân thành cảm ơn tác giả Thành đã đặt nền móng cho bộ gõ này.
 
-Bản fork này thay đổi hoàn toàn kiến trúc của Server và Addon để đạt hiệu năng tốt nhất trên Linux hiện đại.
-
-### 1. VMK Server (Backend)
-
-Server (phần mềm chạy ngầm để giả lập phím và theo dõi chuột) đã được viết lại (Refactor) theo phong cách **System Programming**:
-
-- **Kiến trúc Event-Driven (Sử dụng `poll`):**
-  - **Cũ:** Dùng `usleep(5000)` để kiểm tra sự kiện liên tục (Polling 200Hz). Tốn CPU đánh thức hệ thống ngay cả khi không làm gì.
-  - **Mới:** Chuyển sang cơ chế `poll()` với timeout `-1` ở mọi nơi có thể. Server sẽ "ngủ đông" hoàn toàn khi không có sự kiện. **Mức tiêu thụ CPU khi nhàn rỗi là 0.0%**.
-
-- **Single-Threaded (Đơn luồng):** Loại bỏ hoàn toàn `std::thread`. Gộp chung việc lắng nghe Socket và theo dõi Chuột (Libinput) vào một vòng lặp sự kiện duy nhất. Giảm overhead và dung lượng binary.
-
-- **Phản hồi Thời gian thực (Real-time I/O):**
-  - **Cũ:** Ghi file log chuột vào ổ cứng (có delay 1s để tránh hỏng ổ).
-  - **Mới:** Sử dụng socket để gửi tín hiệu chuột đến addon, không ghi gì vào file, nhận tín hiệu ngay lập tức.
-
-- **Bảo mật socket:**
-  - **Cũ:** File socket có quyền 666, và cả file socket và file mouse flag đều đặt ở thư mục `/home`, bất cứ ai cũng có thể gửi socket nếu biết tên file, cũng như bất cứ ai cũng có thể ghi vào file mouse flag, với phần mềm foss có file tường minh, đây là LỖ HỔNG BẢO MẬT NGHIÊM TRỌNG.
-  - **Mới:**
-    - Sử dụng `getsockopt` để kiểm tra tên tiến trình gửi socket, và chỉ khi nào đúng tiến trình mới xử lý tiếp, không thể giả mạo tên tiến trình.
-    - Không sử dụng file socket như bình thường, mà sử dụng abstract socket, khởi tạo ngay trong kernel, không thể bị chiếm chỗ, không thể bị xóa.
-
-### 2. VMK Addon (Frontend)
-
-Cải thiện trải nghiệm người dùng để tiện lợi hơn khi làm việc đa nhiệm:
-
-- **Per-App Configuration (Cấu hình theo từng App):**
-  - Tự động ghi nhớ chế độ gõ (Mode) cho từng ứng dụng riêng biệt.
-  - _Ví dụ:_ Tự động tắt bộ gõ khi vào Terminal/Vim, tự bật vmk2 khi vào Chrome.
-
-- **Menu Phím Tắt Thông Minh (`` ` ``):**
-  - Nhấn `` ` `` (dấu huyền) để mở menu chọn nhanh chế độ ngay tại con trỏ văn bản chuẩn UI Fcitx5.
-  - Trạng thái hiện tại của App được đánh dấu rõ ràng trong danh sách chọn.
-
-- **Surrounding Text có thể sửa dấu từ cũ**
-
-- **Emoji mode**
+> **Lưu ý:** Phiên bản này đã loại bỏ công cụ cấu hình cũ viết bằng FLTK. Mọi cấu hình giờ đây được thực hiện trực tiếp qua giao diện chuẩn của Fcitx5 hoặc qua menu phím tắt mới.
 
 ---
 
 ## 📦 Cài đặt
 
-### Arch Linux / Arch-based distro (systemd) (AUR)
+<details>
+<summary><b>Arch Linux / Arch-based distro (systemd) (AUR)</b></summary>
+<br>
 
 Hiện tại AUR đã có đầy đủ 3 gói cài đặt:
 
@@ -74,7 +61,30 @@ paru -S fcitx5-vmk-bin
 paru -S fcitx5-vmk-git
 ```
 
-### NixOS
+</details>
+
+<details>
+<summary><b>Các Distro khác (Ubuntu/Fedora/Debian/openSUSE) - Open Build Service</b></summary>
+<br>
+
+Bạn có thể cài đặt fcitx5-vmk thông qua Open Build Service (OBS), nơi cung cấp các package đã được biên dịch sẵn cho nhiều distro khác nhau.
+
+#### Cài đặt qua Open Build Service (Khuyên dùng)
+
+Truy cập trang [Open Build Service](https://software.opensuse.org//download.html?project=home%3Aiamnanoka&package=fcitx5-vmk) để xem hướng dẫn cài đặt chi tiết cho distro của bạn.
+
+[![build result](https://build.opensuse.org/projects/home:iamnanoka/packages/fcitx5-vmk/badge.svg?type=percent)](https://build.opensuse.org/package/show/home:iamnanoka/fcitx5-vmk)
+[![build result](https://build.opensuse.org/projects/home:iamnanoka/packages/fcitx5-vmk/badge.svg?type=default)](https://build.opensuse.org/package/show/home:iamnanoka/fcitx5-vmk)
+
+Hoặc có thể xem cách cài của từng distro [tại đây](INSTALL.md).
+
+> Lưu ý: Arch và Arch-based distro cũng có thể dùng cách cài này.
+
+</details>
+
+<details>
+<summary><b>NixOS</b></summary>
+<br>
 
 Thêm input của fcitx5-vmk vào `flake.nix`:
 
@@ -115,25 +125,19 @@ Bật fcitx5-vmk service trong `configuration.nix`:
 
 Rebuild lại system để cài đặt.
 
-### Các Distro khác (Ubuntu/Fedora/Debian/openSUSE) và Arch Linux/Arch-based distro (systemd)
+</details>
 
-Bạn có thể cài đặt fcitx5-vmk thông qua Open Build Service (OBS), nơi cung cấp các package đã được biên dịch sẵn cho nhiều distro khác nhau.
+<details>
+<summary><b>Biên dịch từ nguồn (Build from source)</b></summary>
+<br>
 
-#### Cách 1: Cài đặt qua Open Build Service (Khuyên dùng)
-
-Truy cập trang [Open Build Service](https://software.opensuse.org//download.html?project=home%3Aiamnanoka&package=fcitx5-vmk) để xem hướng dẫn cài đặt chi tiết cho distro của bạn.
-
-[![build result](https://build.opensuse.org/projects/home:iamnanoka/packages/fcitx5-vmk/badge.svg?type=percent)](https://build.opensuse.org/package/show/home:iamnanoka/fcitx5-vmk)
-[![build result](https://build.opensuse.org/projects/home:iamnanoka/packages/fcitx5-vmk/badge.svg?type=default)](https://build.opensuse.org/package/show/home:iamnanoka/fcitx5-vmk)
-
-Hoặc có thể xem cách cài của từng distro [tại đây](INSTALL.md).
-
-> Lưu ý: Arch và Arch-based distro cũng có thể dùng cách cài này.
-
-#### Cách 2: Biên dịch từ mã nguồn (Build from source)
-
-> LƯU Ý, TUYỆT ĐỐI KHÔNG CÀI BẰNG CÁCH NÀY NẾU BẠN KHÔNG HIỂU GÌ VỀ CẤU TRÚC THƯ MỤC CỦA DISTRO CỦA BẠN, NẾU DISTRO CỦA BẠN ĐƯỢC HỖ TRỢ THÔNG QUA OBS Ở TRÊN, HÃY DÙNG NÓ, KHÔNG NÊN DÙNG CÁCH NÀY ĐỂ RỒI LẠI ĐI HỎI TẠI SAO MÌNH CÀI THEO README NHƯNG LẠI BỊ LỖI NOT AVAILABLE. Chỉ nên hỏi nếu distro của bạn không có trong danh sách hỗ trợ của OBS, lúc đấy bạn phải build từ mã nguồn.  
-> (Xin lỗi vì in hoa, vì in thường vẫn có 2 ông không nhìn được, cay vl)
+> **KHUYẾN CÁO QUAN TRỌNG:**
+>
+> Vui lòng **KHÔNG** sử dụng cách này nếu distro của bạn đã được hỗ trợ thông qua **OBS**.
+>
+> Việc biên dịch thủ công đòi hỏi bạn phải hiểu rõ về cấu trúc thư mục của hệ thống. Nếu bạn gặp lỗi "Not Available" hoặc thiếu thư viện khi cài theo cách này trên các distro phổ biến (Ubuntu/Fedora...), hãy quay lại dùng OBS để đảm bảo tính ổn định và tự động cập nhật.
+>
+> _Chỉ sử dụng cách này nếu distro của bạn thực sự không có trong danh sách hỗ trợ của OBS._
 
 Nếu bạn muốn biên dịch từ mã nguồn, hãy làm theo các bước sau:
 
@@ -168,19 +172,11 @@ sudo make install
 sudo make install PREFIX=/usr/local
 ```
 
-##### Gỡ cài đặt
-
-```bash
-# Gỡ cài đặt
-sudo make uninstall
-
-# Hoặc nếu đã cài đặt với PREFIX tùy chỉnh
-sudo make uninstall PREFIX=/usr/local
-```
+</details>
 
 ---
 
-## ⚙️ Bật Bộ Gõ
+## ⚙️ Bật bộ gõ
 
 Sau khi cài đặt xong, bạn cần thực hiện các bước sau để bật bộ gõ VMK:
 
@@ -244,9 +240,9 @@ Sau đó khởi động lại hệ thống để áp dụng biến môi trườn
 
 Tùy thuộc vào Desktop Environment/Window Manager và Distro của bạn:
 
-- **GNOME:** GNOME Tweak -> Startup Applications -> Add -> `fcitx5`
-- **KDE Plasma:** System Settings -> Startup and Shutdown -> Autostart -> Add... -> Add application... -> `fcitx5`
-- **Xfce:** Settings -> Session and Startup -> Application Autostart -> Add -> `fcitx5`
+- **GNOME:** GNOME Tweak → Startup Applications → Add → `fcitx5`
+- **KDE Plasma:** System Settings → Startup and Shutdown → Autostart → Add... → Add application... → `fcitx5`
+- **Xfce:** Settings → Session and Startup → Application Autostart → Add → `fcitx5`
 - **i3/Sway:** Thêm `exec fcitx5 -d` vào file cấu hình (`~/.config/i3/config` hoặc `~/.config/sway/config`)
 - **Hyprland:** Thêm `exec-once = fcitx5 -d` vào `~/.config/hypr/hyprland.conf`
 
@@ -270,13 +266,13 @@ Sau khi login lại:
 
 3. Tìm và chọn **VMK** trong danh sách.
 
-4. Nhấn **<-** để thêm vào danh sách bộ gõ.
+4. Nhấn **←** để thêm vào danh sách bộ gõ.
 
 ### 7. Lưu ý cho Wayland (KDE và Hyprland)
 
 Nếu bạn sử dụng **Wayland** trên KDE Plasma hoặc Hyprland, bạn cần thêm **Virtual Keyboard**:
 
-- **KDE Plasma (Wayland):** System Settings -> Keyboard -> Virtual Keyboard -> Fcitx 5
+- **KDE Plasma (Wayland):** System Settings → Keyboard → Virtual Keyboard → Fcitx 5
 - **Hyprland:** thêm `permission = fcitx5-vmk-server, keyboard, allow` vào `~/.config/hypr/hyprland.conf`
 
 Điều này cần thiết vì trên Wayland, Fcitx5 không thể hoạt động như X11.
@@ -285,48 +281,162 @@ Nếu bạn sử dụng **Wayland** trên KDE Plasma hoặc Hyprland, bạn cầ
 
 ## 📖 Hướng dẫn sử dụng
 
-### 1. Menu Chuyển Mode Nhanh
+### 1. Menu chuyển mode nhanh
 
-Khi đang ở trong bất kỳ ứng dụng nào, nhấn phím:
+Khi đang ở trong bất kỳ ứng dụng nào, nhấn phím **`** (dấu huyền) để mở menu chọn nhanh:
 
+- 🚀 **Mode 1 (Uinput smooth):** Chế độ mặc định, tốc độ phản hồi cao. Sử dụng server để gửi phím xóa. _Hạn chế:_ Không tương thích với ứng dụng xử lý chậm (ví dụ: LibreOffice).
+- 🐢 **Mode 2 (Uinput):** Tương tự Mode 1 nhưng tốc độ gửi phím chậm hơn. _Khuyên dùng:_ Cho các ứng dụng có tốc độ xử lý input thấp.
+- 🍷 **Mode 3 (Uinput hardcore):** Biến thể của Mode 1. _Khuyên dùng:_ Chạy ứng dụng Windows qua Wine.
+- ✨ **Mode 4 (Surrounding Text):** Sử dụng cơ chế Surrounding Text của ứng dụng (tối ưu cho Qt/GTK). Cho phép sửa dấu từ đã gõ và hoạt động mượt mà. _Lưu ý:_ Phụ thuộc vào sự hỗ trợ của ứng dụng (có thể không ổn định trên Firefox).
+- 📝 **Mode 5 (Preedit):** Hiển thị gạch chân khi gõ. Độ tương thích cao nhất nhưng trải nghiệm không tự nhiên bằng các mode trên.
+- 😃 **Emoji mode:** Chế độ tìm kiếm và nhập Emoji (nguồn EmojiOne, hỗ trợ Fuzzy Search). Xem danh sách [tại đây](data/emoji/EMOJI_GUIDE.md).
+- 📴 **OFF:** Tắt bộ gõ cho ứng dụng hiện tại.
+- 🔄 **Xóa thiết lập cho app:** Khôi phục cấu hình mặc định cho ứng dụng.
+- 🚪 **Tắt menu và gõ phím `:** Đóng menu và nhập ký tự dấu huyền.
+
+### 2. Cơ chế đặt lại thông minh
+
+Khi bạn click chuột hoặc chạm vào touchpad để đổi vị trí nhập liệu, bộ gõ sẽ tự động đặt lại trạng thái ngay lập tức. Điều này giúp tránh lỗi dính chữ cũ vào từ mới (một lỗi rất phổ biến trên các bộ gõ Linux khác).
+
+---
+
+## 🗑️ Gỡ cài đặt
+
+<details>
+<summary><b>Arch Linux / Arch-based (AUR)</b></summary>
+<br>
+
+Dùng `pacman` để gỡ, các file config ở `$HOME` sẽ được giữ lại (đúng chuẩn Linux):
+
+```bash
+sudo pacman -Rns fcitx5-vmk
+# Hoặc nếu cài bản bin/git
+sudo pacman -Rns fcitx5-vmk-bin
+sudo pacman -Rns fcitx5-vmk-git
 ```
-` (Phím dấu huyền)
+
+</details>
+
+<details>
+<summary><b>Ubuntu / Fedora / openSUSE (OBS)</b></summary>
+<br>
+
+Gỡ package thông thường qua trình quản lý gói:
+
+```bash
+# Ubuntu/Debian
+sudo apt remove fcitx5-vmk
+
+# Fedora
+sudo dnf remove fcitx5-vmk
+
+# openSUSE
+sudo zypper remove fcitx5-vmk
 ```
 
-Menu sẽ hiện ra cho phép bạn chọn số từ 1-7 và `` ` ``:
+</details>
 
-- **Mode 1 (Uinput smooth):** Chế độ mặc định, tương thích tốt (dùng server gửi phím xóa), rất mượt, nhưng nếu gặp các app xử lý kém (như libreoffice) thì tạch, đó là lý do phải có mode 2.
-- **Mode 2 (Uinput):** Cũng như mode 1 nhưng xóa và gửi phím chậm hơn, dùng cho các app có tốc độ xử lý khá chậm.
-- **Mode 3 (Uinput hardcore):** Cũng là mode 1 nhưng độ tương thích khá chấm hỏi, chỉ khuyến khích nếu dùng wine, các app native nên dùng mode 1 hoặc mode 2.
-- **Mode 4 (Surrounding Text):** Dùng cơ chế surrounding text của ứng dụng, hoạt động rất tốt trên các app qt và gtk, có thể sửa dấu của các từ đã gõ trước đó, và mode này là mode mượt nhất, thậm chí có thể gõ trên cả thanh địa chỉ của firefox ngon lành (nhưng trong các trang web firefox mình lại thấy nó hơi troll, cái này là vấn đề của firefox, cũng bó tay)
-- **Mode 5 (Preedit):** Hiện gạch chân, tương thích cao nhưng không tự nhiên bằng Mode 1, 2, 4.
-- **Emoji mode:** Chuyển sang chế độ gõ emoji, nguồn emoji từ EmojiOne, search emoji bằng thuật toàn fuzzy search tiện lợi, có thể tra cứu tại bảng [sau](data/emoji/EMOJI_GUIDE.md).
-- **OFF:** Tắt bộ gõ cho ứng dụng này.
-- **Xóa thiết lập cho app:** Quay về dùng cấu hình mặc định.
-- **Tắt menu và gõ phím `:** Thoát menu và in ký tự dấu huyền.
+<details>
+<summary><b>NixOS</b></summary>
+<br>
 
-### 2. Cơ chế Reset thông minh
+Xóa (hoặc comment) dòng `services.fcitx5-vmk` và `inputs` trong file config, sau đó rebuild lại system. NixOS sẽ tự dọn dẹp.
 
-Khi bạn click chuột hoặc chạm vào touchpad để đổi vị trí nhập liệu, bộ gõ sẽ tự động Reset trạng thái ngay lập tức. Điều này giúp tránh lỗi dính chữ cũ vào từ mới (một lỗi rất phổ biến trên các bộ gõ Linux khác).
+</details>
 
----
+<details>
+<summary><b>Biên dịch từ nguồn (Source)</b></summary>
+<br>
 
-## 🙏 Lời cảm ơn (Credits)
+Vào lại thư mục source code đã build và chạy:
 
-Dự án này được phát triển dựa trên ý tưởng và mã nguồn gốc của tác giả Thành (tác giả gốc của VMK).
+```bash
+sudo make uninstall
+```
 
-Chân thành cảm ơn tác giả đã đặt nền móng cho một bộ gõ tiếng Việt gọn nhẹ trên Linux.
+</details>
 
 ---
 
-## 📄 License
+## 🚀 Cải tiến nổi bật (Changelog)
 
-[GPL-3.0-or-later](LICENSE)
+<details>
+<summary><b>Click để xem chi tiết kỹ thuật</b></summary>
+<br>
+
+Bản fork này thay đổi hoàn toàn kiến trúc của Server và Addon để đạt hiệu năng tốt nhất trên Linux hiện đại.
+
+### 1. VMK Server (Backend)
+
+Server (phần mềm chạy ngầm để giả lập phím và theo dõi chuột) đã được viết lại (Refactor) theo phong cách **System Programming**:
+
+- **Kiến trúc Event-Driven (Sử dụng `poll`):**
+  - **Cũ:** Dùng `usleep(5000)` để kiểm tra sự kiện liên tục (Polling 200Hz). Tốn CPU đánh thức hệ thống ngay cả khi không làm gì.
+  - **Mới:** Chuyển sang cơ chế `poll()` với timeout `-1` ở mọi nơi có thể. Server sẽ "ngủ đông" hoàn toàn khi không có sự kiện. **Mức tiêu thụ CPU khi nhàn rỗi là 0.0%**.
+
+- **Single-Threaded (Đơn luồng):** Loại bỏ hoàn toàn `std::thread`. Gộp chung việc lắng nghe Socket và theo dõi Chuột (Libinput) vào một vòng lặp sự kiện duy nhất. Giảm overhead và dung lượng binary.
+
+- **Phản hồi Thời gian thực (Real-time I/O):**
+  - **Cũ:** Ghi file log chuột vào ổ cứng (có delay 1s để tránh hỏng ổ).
+  - **Mới:** Sử dụng socket để gửi tín hiệu chuột đến addon, không ghi gì vào file, nhận tín hiệu ngay lập tức.
+
+- **Bảo mật socket:**
+  - **Cũ:** File socket có quyền 666, và cả file socket và file mouse flag đều đặt ở thư mục `/home`, bất cứ ai cũng có thể gửi socket nếu biết tên file, cũng như bất cứ ai cũng có thể ghi vào file mouse flag, với phần mềm foss có file tường minh, đây là LỖ HỔNG BẢO MẬT NGHIÊM TRỌNG.
+  - **Mới:**
+    - Sử dụng `getsockopt` để kiểm tra tên tiến trình gửi socket, và chỉ khi nào đúng tiến trình mới xử lý tiếp, không thể giả mạo tên tiến trình.
+    - Không sử dụng file socket như bình thường, mà sử dụng abstract socket, khởi tạo ngay trong kernel, không thể bị chiếm chỗ, không thể bị xóa.
+
+### 2. VMK Addon (Frontend)
+
+Cải thiện trải nghiệm người dùng để tiện lợi hơn khi làm việc đa nhiệm:
+
+- **Per-App Configuration (Cấu hình theo từng App):**
+  - Tự động ghi nhớ chế độ gõ (Mode) cho từng ứng dụng riêng biệt.
+  - _Ví dụ:_ Tự động tắt bộ gõ khi vào Terminal/Vim, tự bật vmk2 khi vào Chrome.
+
+- **Menu Phím Tắt Thông Minh ( ` ):**
+  - Nhấn ` (dấu huyền) để mở menu chọn nhanh chế độ ngay tại con trỏ văn bản chuẩn UI Fcitx5.
+  - Trạng thái hiện tại của App được đánh dấu rõ ràng trong danh sách chọn.
+
+- **Surrounding Text có thể sửa dấu từ cũ**
+
+- **Emoji mode**
+</details>
 
 ---
 
-## 🔗 Liên kết
+## 🤝 Đóng góp
 
-- **GitHub Repository:** https://github.com/nhktmdzhg/VMK
-- **Báo lỗi:** https://github.com/nhktmdzhg/VMK/issues
-- **Open Build Service:** https://software.opensuse.org//download.html?project=home%3Aiamnanoka&package=fcitx5-vmk
+Đóng góp là điều làm cho cộng đồng mã nguồn mở trở thành một nơi tuyệt vời để học hỏi, truyền cảm hứng và sáng tạo. Mọi đóng góp của bạn đều được **đánh giá cao**.
+
+Vui lòng xem hướng dẫn chi tiết tại [đây](CONTRIBUTING.md) để biết cách tham gia phát triển dự án, quy trình Pull Request và quy tắc code style.
+
+Đừng quên tặng dự án một ⭐! Cảm ơn bạn rất nhiều!
+
+### Những người đóng góp:
+
+<a href="https://github.com/linux-l10n-vi/VMK/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=linux-l10n-vi/VMK" alt="contrib.rocks image" />
+</a>
+
+---
+
+## ✨ Lịch sử sao
+
+<a href="https://star-history.com/#nhktmdzhg/VMK&Date">
+ <img src="https://api.star-history.com/svg?repos=nhktmdzhg/VMK&type=Date" alt="Star History Chart">
+</a>
+
+<!-- MARKDOWN LINKS & IMAGES -->
+
+[contributors-shield]: https://img.shields.io/github/contributors/nhktmdzhg/VMK.svg?style=for-the-badge
+[contributors-url]: https://github.com/nhktmdzhg/VMK/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/nhktmdzhg/VMK.svg?style=for-the-badge
+[forks-url]: https://github.com/nhktmdzhg/VMK/network/members
+[stars-shield]: https://img.shields.io/github/stars/nhktmdzhg/VMK.svg?style=for-the-badge
+[stars-url]: https://github.com/nhktmdzhg/VMK/stargazers
+[issues-shield]: https://img.shields.io/github/issues/nhktmdzhg/VMK.svg?style=for-the-badge
+[issues-url]: https://github.com/nhktmdzhg/VMK/issues
+[license-shield]: https://img.shields.io/github/license/nhktmdzhg/VMK.svg?style=for-the-badge
+[license-url]: https://github.com/nhktmdzhg/VMK/blob/main/LICENSE
