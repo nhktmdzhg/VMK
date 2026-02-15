@@ -10,7 +10,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/linux-l10n-vi/VMK">
+  <a href="https://github.com/nhktmdzhg/VMK">
     <img src="data/icons/scalable/apps/fcitx-vmk.svg" alt="Logo" width="80" height="80">
   </a>
 
@@ -201,10 +201,14 @@ systemctl status fcitx5-vmk-server@$(whoami).service
 Bộ gõ sẽ không hoạt động nếu thiếu các biến này. Chạy lệnh dưới để thêm vào file cấu hình shell của bạn (`~/.bash_profile` hoặc `~/.zprofile`):
 
 ```bash
-# Lệnh này sẽ thêm cấu hình vào ~/.bash_profile
-echo 'export GTK_IM_MODULE=fcitx' >> ~/.bash_profile
-echo 'export QT_IM_MODULE=fcitx' >> ~/.bash_profile
-echo 'export XMODIFIERS=@im=fcitx' >> ~/.bash_profile
+# Lệnh này sẽ thêm cấu hình vào ~/.bash_profile, với .zprofile làm tương tự
+cat <<EOF >> ~/.bash_profile
+export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
+export XMODIFIERS=@im=fcitx
+export SDL_IM_MODULE=fcitx
+export GLFW_IM_MODULE=ibus
+EOF
 ```
 
 Log out và log in để áp dụng thay đổi.
@@ -216,9 +220,13 @@ Log out và log in để áp dụng thay đổi.
 Một số trường hợp file `~/.bash_profile` không được load, bạn có thể thử thêm vào `/etc/environment`. Cách này "mạnh tay" hơn và áp dụng cho toàn bộ hệ thống:
 
 ```bash
-sudo sh -c 'echo "GTK_IM_MODULE=fcitx" >> /etc/environment'
-sudo sh -c 'echo "QT_IM_MODULE=fcitx" >> /etc/environment'
-sudo sh -c 'echo "XMODIFIERS=@im=fcitx" >> /etc/environment'
+cat <<EOF | sudo tee -a /etc/environment
+GTK_IM_MODULE=fcitx
+QT_IM_MODULE=fcitx
+XMODIFIERS=@im=fcitx
+SDL_IM_MODULE=fcitx
+GLFW_IM_MODULE=ibus
+EOF
 ```
 
 > **Lưu ý:** Sau khi sửa file này cần khởi động lại máy.
@@ -266,7 +274,7 @@ Nếu bạn sử dụng **Wayland**, Fcitx5 cần được cấp quyền để h
 - **KDE Plasma (Wayland):** Vào _System Settings_ → _Keyboard_ → _Virtual Keyboard_ → Chọn **Fcitx 5**.
 - **Hyprland:** Thêm dòng sau vào `~/.config/hypr/hyprland.conf`:
   ```ini
-  windowrule = pseudo, fcitx
+  permission = fcitx5-vmk-server, keyboard, allow
   ```
   _(Điều này cần thiết vì trên Wayland, Fcitx5 không thể hoạt động như X11)._
 
@@ -409,15 +417,15 @@ Vui lòng xem hướng dẫn chi tiết tại [đây](CONTRIBUTING.md) để bi�
 
 ### Những người đóng góp:
 
-<a href="https://github.com/linux-l10n-vi/VMK/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=linux-l10n-vi/VMK" alt="contrib.rocks image" />
+<a href="https://github.com/nhktmdzhg/VMK/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=nhktmdzhg/VMK" alt="contrib.rocks image" />
 </a>
 
 ---
 
 ## 📃 Giấy phép
 
-Dự án được phân phối dưới giấy phép GNU General Public License v3. Xem `LICENSE` để biết thêm chi tiết.
+Dự án được phân phối dưới giấy phép GNU General Public License v3. Xem [`LICENSE`](LICENSE) để biết thêm chi tiết.
 
 ---
 
