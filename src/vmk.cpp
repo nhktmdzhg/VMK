@@ -626,7 +626,8 @@ namespace fcitx {
             int my_id                = ++current_thread_id_;
             current_backspace_count_ = 0;
             pending_commit_string_   = addedPart;
-            expected_backspaces_     = utf8::length(deletedPart) + 1 + (isAutofillCertain(ic_->surroundingText()) ? 1 : 0);
+            const auto& surrounding  = ic_->surroundingText();
+            expected_backspaces_     = utf8::length(deletedPart) + 1 + (isAutofillCertain(surrounding) ? 1 : 0);
             replacement_thread_id_.store(my_id, std::memory_order_release);
             replacement_start_ms_.store(now_ms(), std::memory_order_release);
             is_deleting_.store(true, std::memory_order_release);
@@ -1052,9 +1053,10 @@ namespace fcitx {
             }
             */
 
-            const auto& text    = (ic_->surroundingText()).text();
-            size_t      textLen = fcitx_utf8_strlen(text.c_str());
-            realtextLen         = textLen;
+            const auto& surrounding = ic_->surroundingText();
+            const auto& text        = surrounding.text();
+            size_t      textLen     = fcitx_utf8_strlen(text.c_str());
+            realtextLen             = textLen;
             if (is_deleting_.load(std::memory_order_acquire)) {
                 return;
             }
@@ -1659,7 +1661,7 @@ namespace fcitx {
         }
         auto state = keyEvent.inputContext()->propertyFor(&factory_);
         state->keyEvent(keyEvent);
-        auto        s       = ic->surroundingText();
+        const auto& s       = ic->surroundingText();
         const auto& text    = s.text();
         size_t      textLen = fcitx_utf8_strlen(text.c_str());
         int         cursor  = s.cursor();
