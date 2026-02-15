@@ -22,9 +22,9 @@
     <a href="#-cài-đặt"><strong>Cài đặt »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/nhktmdzhg/VMK/issues">Báo lỗi</a>
+    <a href="https://github.com/nhktmdzhg/VMK/issues/new?labels=bug">Báo lỗi</a>
     &middot;
-    <a href="https://github.com/nhktmdzhg/VMK/issues">Yêu cầu tính năng</a>
+    <a href="https://github.com/nhktmdzhg/VMK/issues/new?labels=enhancement">Yêu cầu tính năng</a>
     &middot;
     <a href="https://software.opensuse.org//download.html?project=home%3Aiamnanoka&package=fcitx5-vmk">Open Build Service</a>
   </p>
