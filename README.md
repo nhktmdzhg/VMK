@@ -2,10 +2,10 @@
 
 <div align="center">
   <a href="https://github.com/nhktmdzhg/VMK">
-    <img src="data/icons/scalable/apps/fcitx-vmk.svg" alt="Logo" width="100" height="100">
+    <img src="data/icons/scalable/apps/fcitx-vmk.svg" alt="Logo" width="80" height="80">
   </a>
 
-  <h1 align="center">Fcitx5 VMK (Nanoka)</h1>
+  <h2 align="center">Fcitx5 VMK (Nanoka)</h1>
 
   <p align="center">
     <b>Bộ gõ tiếng Việt đơn giản, hiệu năng cao cho Linux</b>
@@ -29,7 +29,7 @@
   </p>
 
   <p align="center">
-    <a href="#-cài-đặt"><strong>Cài đặt ngay »</strong></a>
+    <a href="#-cài-đặt"><strong>Cài đặt »</strong></a>
     <br />
     <br />
     <a href="https://github.com/nhktmdzhg/VMK/issues/new?labels=bug">Báo lỗi</a>
