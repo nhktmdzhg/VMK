@@ -1589,11 +1589,73 @@ namespace fcitx {
             if (keyEvent.isRelease())
                 return;
 
+            auto   baseList = ic->inputPanel().candidateList();
+            auto   menuList = std::dynamic_pointer_cast<CommonCandidateList>(baseList);
+            KeySym keySym   = keyEvent.key().sym();
+
+            auto   moveCursor = [&](int delta) {
+                if (!menuList || menuList->empty()) {
+                    return false;
+                }
+
+                int totalSize = menuList->totalSize();
+                if (totalSize <= 1) {
+                    return false;
+                }
+
+                int cursorIndex = menuList->globalCursorIndex();
+                if (cursorIndex < 1 || cursorIndex >= totalSize) {
+                    cursorIndex = 1;
+                }
+
+                int nextIndex = cursorIndex + delta;
+                if (nextIndex < 1) {
+                    nextIndex = totalSize - 1;
+                } else if (nextIndex >= totalSize) {
+                    nextIndex = 1;
+                }
+
+                menuList->setGlobalCursorIndex(nextIndex);
+                ic->updateUserInterface(UserInterfaceComponent::InputPanel);
+                return true;
+            };
+
+            switch (keySym) {
+                case FcitxKey_Tab:
+                case FcitxKey_Down: {
+                    if (moveCursor(1)) {
+                        keyEvent.filterAndAccept();
+                        return;
+                    }
+                    break;
+                }
+                case FcitxKey_ISO_Left_Tab:
+                case FcitxKey_Up: {
+                    if (moveCursor(-1)) {
+                        keyEvent.filterAndAccept();
+                        return;
+                    }
+                    break;
+                }
+                case FcitxKey_space:
+                case FcitxKey_Return: {
+                    if (menuList && !menuList->empty()) {
+                        int selectedIndex = menuList->globalCursorIndex();
+                        if (selectedIndex < 1 || selectedIndex >= menuList->totalSize()) {
+                            selectedIndex = 1;
+                        }
+                        menuList->candidateFromAll(selectedIndex).select(ic);
+                        keyEvent.filterAndAccept();
+                        return;
+                    }
+                    break;
+                }
+                default: break;
+            }
+
             keyEvent.filterAndAccept();
             VMKMode selectedMode  = VMKMode::NoMode;
             bool    selectionMade = false;
-
-            KeySym  keySym = keyEvent.key().sym();
 
             // map number key to mode
             switch (keySym) {
@@ -1942,6 +2004,19 @@ namespace fcitx {
             ic->forwardKey(key, false);
             ic->forwardKey(key, true);
         }));
+
+        int selectedIndex = 1;
+        switch (realMode) {
+            case VMKMode::VMKSmooth: selectedIndex = 1; break;
+            case VMKMode::VMK1: selectedIndex = 2; break;
+            case VMKMode::VMK1HC: selectedIndex = 3; break;
+            case VMKMode::VMK2: selectedIndex = 4; break;
+            case VMKMode::Preedit: selectedIndex = 5; break;
+            case VMKMode::Off: selectedIndex = 6; break;
+            case VMKMode::Emoji: selectedIndex = 7; break;
+            default: selectedIndex = 1; break;
+        }
+        candidateList->setGlobalCursorIndex(selectedIndex);
 
         ic->inputPanel().reset();
         ic->inputPanel().setCandidateList(std::move(candidateList));
