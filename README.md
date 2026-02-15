@@ -8,7 +8,7 @@
   <h1 align="center">Fcitx5 VMK (Nanoka)</h1>
 
   <p align="center">
-    <b>Bộ gõ tiếng Việt đơn giản, hiệu năng cao, tối ưu hóa cho Linux</b>
+    <b>Bộ gõ tiếng Việt đơn giản, hiệu năng cao cho Linux</b>
     <br />
     <br />
     <a href="https://github.com/nhktmdzhg/VMK/releases">
