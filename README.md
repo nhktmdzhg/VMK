@@ -5,6 +5,7 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![License][license-shield]][license-url]
+[![Facebook][facebook-shield]][facebook-url]
 
 <!-- PROJECT LOGO -->
 <br />
@@ -29,7 +30,7 @@
   </p>
 </div>
 
-Dự án này là một bản fork được tối ưu hóa từ bộ gõ VMK gốc. Chân thành cảm ơn tác giả Thành đã đặt nền móng cho bộ gõ này.
+Dự án này là một bản fork được tối ưu hóa từ [bộ gõ VMK gốc](https://github.com/thanhpy2009/VMK). Chân thành cảm ơn tác giả Thành đã đặt nền móng cho bộ gõ này.
 
 > **Lưu ý:** Phiên bản này đã loại bỏ công cụ cấu hình cũ viết bằng FLTK. Mọi cấu hình giờ đây được thực hiện trực tiếp qua giao diện chuẩn của Fcitx5 hoặc qua menu phím tắt mới.
 
@@ -182,100 +183,92 @@ Sau khi cài đặt xong, bạn cần thực hiện các bước sau để bật
 
 ### 1. Bật VMK Server
 
-```bash
-# Bật và khởi động service
-sudo systemctl enable --now fcitx5-vmk-server@$(whoami).service
+Server giúp bộ gõ tương tác với hệ thống tốt hơn (đặc biệt là gửi phím xóa và sửa lỗi).
 
-# Kiểm tra status
+```bash
+# Bật và khởi động service (tự động fix lỗi thiếu user systemd nếu có)
+sudo systemctl enable --now fcitx5-vmk-server@$(whoami).service || \
+(sudo systemd-sysusers && sudo systemctl enable --now fcitx5-vmk-server@$(whoami).service)
+```
+
+```bash
+# Kiểm tra status (nếu thấy active (running) màu xanh là OK)
 systemctl status fcitx5-vmk-server@$(whoami).service
 ```
 
-Nếu service bị **failed**, hãy chạy lệnh sau để tạo user systemd cần thiết:
+### 2. Thiết lập biến môi trường
+
+Bộ gõ sẽ không hoạt động nếu thiếu các biến này. Chạy lệnh dưới để thêm vào file cấu hình shell của bạn (`~/.bash_profile` hoặc `~/.zprofile`):
 
 ```bash
-sudo systemd-sysusers
+# Lệnh này sẽ thêm cấu hình vào ~/.bash_profile
+echo 'export GTK_IM_MODULE=fcitx' >> ~/.bash_profile
+echo 'export QT_IM_MODULE=fcitx' >> ~/.bash_profile
+echo 'export XMODIFIERS=@im=fcitx' >> ~/.bash_profile
 ```
 
-Sau đó thử bật lại service:
+Log out và log in để áp dụng thay đổi.
+
+<details>
+<summary><b>Nếu bạn vẫn chưa gõ được sau khi Log out</b></summary>
+<br>
+
+Một số trường hợp file `~/.bash_profile` không được load, bạn có thể thử thêm vào `/etc/environment`. Cách này "mạnh tay" hơn và áp dụng cho toàn bộ hệ thống:
 
 ```bash
-sudo systemctl enable --now fcitx5-vmk-server@$(whoami).service
+sudo sh -c 'echo "GTK_IM_MODULE=fcitx" >> /etc/environment'
+sudo sh -c 'echo "QT_IM_MODULE=fcitx" >> /etc/environment'
+sudo sh -c 'echo "XMODIFIERS=@im=fcitx" >> /etc/environment'
 ```
 
-### 2. Thoát hoàn toàn IBus (nếu có)
+> **Lưu ý:** Sau khi sửa file này cần khởi động lại máy.
 
-Nếu hệ thống của bạn đang sử dụng IBus, hãy thoát hoàn toàn trước khi chuyển sang Fcitx5:
+</details>
+
+### 3. Tắt bộ gõ cũ (IBus) và thêm Fcitx5 vào Autostart
+
+Nếu máy bạn đang dùng IBus, hãy tắt nó đi trước khi chuyển sang Fcitx5 để tránh xung đột.
 
 ```bash
-# Kill ibus-daemon
-killall ibus-daemon
-# Hoặc
-ibus exit
+# Tắt IBus
+killall ibus-daemon || ibus exit
 ```
 
-### 3. Thiết lập biến môi trường
+Thêm `fcitx5` vào danh sách ứng dụng khởi động cùng hệ thống (Autostart).
 
-Export các biến môi trường sau vào file cấu hình shell của bạn (`~/.bash_profile`, `~/.zprofile`, hoặc `~/.profile`):
+<details>
+<summary><b>Hướng dẫn Autostart cho từng môi trường (GNOME, KDE, i3...)</b></summary>
+<br>
 
-```bash
-# Thêm vào ~/.bash_profile, ~/.zprofile, hoặc ~/.profile
-export GTK_IM_MODULE=fcitx
-export QT_IM_MODULE=fcitx
-export XMODIFIERS=@im=fcitx
-```
-
-Sau đó đăng xuất tài khoản người dùng hiện tại và đăng nhập lại.
-
-Hoặc nếu lỗi, có thể mạnh tay hơn, thêm các dòng sau vào `/etc/environment` (dùng khi cách trên không dùng được hoặc bị lỗi):
-
-```bash
-GTK_IM_MODULE=fcitx
-QT_IM_MODULE=fcitx
-XMODIFIERS=@im=fcitx
-```
-
-Sau đó khởi động lại hệ thống để áp dụng biến môi trường mới.
-
-### 4. Thêm Fcitx5 vào Autostart
-
-Tùy thuộc vào Desktop Environment/Window Manager và Distro của bạn:
-
-- **GNOME:** GNOME Tweak → Startup Applications → Add → `fcitx5`
-- **KDE Plasma:** System Settings → Startup and Shutdown → Autostart → Add... → Add application... → `fcitx5`
-- **Xfce:** Settings → Session and Startup → Application Autostart → Add → `fcitx5`
-- **i3/Sway:** Thêm `exec fcitx5 -d` vào file cấu hình (`~/.config/i3/config` hoặc `~/.config/sway/config`)
+- **GNOME:** Mở _GNOME Tweaks_ → _Startup Applications_ → Add → `Fcitx 5`
+- **KDE Plasma:** _System Settings_ → _Startup and Shutdown_ → _Autostart_ → Add... → Add Application... → `Fcitx 5`
+- **Xfce:** _Settings_ → _Session and Startup_ → _Application Autostart_ → Add → `Fcitx 5`
+- **i3/Sway:** Thêm `exec --no-startup-id fcitx5 -d` vào file config (`~/.config/i3/config` hoặc `~/.config/sway/config`)
 - **Hyprland:** Thêm `exec-once = fcitx5 -d` vào `~/.config/hypr/hyprland.conf`
 
-> **Lưu ý:** Hãy xóa autostart của IBus nếu có (thường là `ibus-daemon` hoặc `ibus`), hoặc tốt nhất là gỡ luôn ibus ra khỏi máy cho nó khỏe người.
+> **Lưu ý:** Hãy xóa autostart của IBus nếu có (thường là `ibus-daemon` hoặc `ibus`), hoặc tốt hơn là gỡ luôn ibus ra khỏi máy.
 
-### 5. Log out / Login
+</details>
 
-Để các thay đổi có hiệu lực, bạn cần log out và login lại vào hệ thống.
+### 4. Cấu hình Fcitx5
 
-### 6. Cấu hình Fcitx5
+Sau khi đã Log out và Log in lại:
 
-Sau khi login lại:
+1. Mở **Fcitx5 Configuration** (tìm trong menu ứng dụng hoặc chạy `fcitx5-configtool`).
+2. Tìm **VMK** ở cột bên phải.
+3. Nhấn mũi tên **<** để thêm nó sang cột bên trái.
+4. Apply.
 
-1. Mở **Fcitx5 Configuration**:
+### 5. Cấu hình cho Wayland (KDE và Hyprland)
 
-   ```bash
-   fcitx5-configtool
-   ```
+Nếu bạn sử dụng **Wayland**, Fcitx5 cần được cấp quyền để hoạt động như bàn phím ảo:
 
-2. Trong tab **Input Method**
-
-3. Tìm và chọn **VMK** trong danh sách.
-
-4. Nhấn **←** để thêm vào danh sách bộ gõ.
-
-### 7. Lưu ý cho Wayland (KDE và Hyprland)
-
-Nếu bạn sử dụng **Wayland** trên KDE Plasma hoặc Hyprland, bạn cần thêm **Virtual Keyboard**:
-
-- **KDE Plasma (Wayland):** System Settings → Keyboard → Virtual Keyboard → Fcitx 5
-- **Hyprland:** thêm `permission = fcitx5-vmk-server, keyboard, allow` vào `~/.config/hypr/hyprland.conf`
-
-Điều này cần thiết vì trên Wayland, Fcitx5 không thể hoạt động như X11.
+- **KDE Plasma (Wayland):** Vào _System Settings_ → _Keyboard_ → _Virtual Keyboard_ → Chọn **Fcitx 5**.
+- **Hyprland:** Thêm dòng sau vào `~/.config/hypr/hyprland.conf`:
+  ```ini
+  windowrule = pseudo, fcitx
+  ```
+  _(Điều này cần thiết vì trên Wayland, Fcitx5 không thể hoạt động như X11)._
 
 ---
 
@@ -359,7 +352,7 @@ sudo make uninstall
 
 ---
 
-## 🚀 Cải tiến nổi bật (Changelog)
+## 🚀 Cải tiến nổi bật
 
 <details>
 <summary><b>Click để xem chi tiết kỹ thuật</b></summary>
@@ -422,11 +415,19 @@ Vui lòng xem hướng dẫn chi tiết tại [đây](CONTRIBUTING.md) để bi�
 
 ---
 
+## 📃 Giấy phép
+
+Dự án được phân phối dưới giấy phép GNU General Public License v3. Xem `LICENSE` để biết thêm chi tiết.
+
+---
+
 ## ✨ Lịch sử sao
 
 <a href="https://star-history.com/#nhktmdzhg/VMK&Date">
  <img src="https://api.star-history.com/svg?repos=nhktmdzhg/VMK&type=Date" alt="Star History Chart">
 </a>
+
+---
 
 <!-- MARKDOWN LINKS & IMAGES -->
 
@@ -440,3 +441,5 @@ Vui lòng xem hướng dẫn chi tiết tại [đây](CONTRIBUTING.md) để bi�
 [issues-url]: https://github.com/nhktmdzhg/VMK/issues
 [license-shield]: https://img.shields.io/github/license/nhktmdzhg/VMK.svg?style=for-the-badge
 [license-url]: https://github.com/nhktmdzhg/VMK/blob/main/LICENSE
+[facebook-shield]: https://img.shields.io/badge/Facebook-Group-0866FF?style=for-the-badge&logo=facebook&logoColor=white
+[facebook-url]: https://www.facebook.com/groups/vietnamlinuxcommunity
