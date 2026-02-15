@@ -1,0 +1,57 @@
+name: Yêu cầu tính năng
+description: Đề xuất tính năng mới cho fcitx5-vmk
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cảm ơn bạn đã đề xuất tính năng mới! Vui lòng điền đầy đủ thông tin bên dưới.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Vấn đề hiện tại
+      description: Mô tả vấn đề bạn gặp phải hoặc tính năng còn thiếu
+      placeholder: Tôi gặp khó khăn khi... / Hiện tại bộ gõ chưa có tính năng...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Giải pháp đề xuất
+      description: Mô tả tính năng bạn muốn có
+      placeholder: Tôi muốn bộ gõ có thể...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Các giải pháp thay thế
+      description: Bạn đã thử giải pháp nào khác chưa?
+      placeholder: Tôi đã thử... nhưng không hiệu quả vì...
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case
+      description: Mô tả tình huống sử dụng cụ thể
+      placeholder: |
+        Ví dụ:
+        - Khi soạn thảo văn bản dài...
+        - Khi làm việc với code...
+        - Khi chat với bạn bè...
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Thông tin bổ sung
+      description: Bất kỳ thông tin nào khác có thể hữu ích
+      placeholder: Liên kết tham khảo, ảnh chụp màn hình ví dụ, bộ gõ khác có chức năng tương tự, v.v.
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        *Lưu ý: Không phải mọi yêu cầu tính năng đều sẽ được thực hiện ngay lập tức. Mình sẽ xem xét dựa trên mức độ ưu tiên và khả năng kỹ thuật.*

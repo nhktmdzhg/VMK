@@ -1,0 +1,114 @@
+name: Báo lỗi
+description: Báo cáo lỗi để giúp chúng tôi cải thiện
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cảm ơn bạn đã dành thởi gian báo cáo lỗi! Vui lòng điền đầy đủ thông tin bên dưới.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Mô tả lỗi
+      description: Mô tả rõ ràng về lỗi bạn gặp phải
+      placeholder: Khi tôi gõ..., bộ gõ hiển thị...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Các bước tái hiện
+      description: Các bước để tái hiện lỗi
+      placeholder: |
+        1. Mở...
+        2. Gõ...
+        3. Nhấn...
+        4. Lỗi xuất hiện
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Kết quả mong đợi
+      description: Mô tả kết quả bạn mong đợi
+      placeholder: Khi gõ..., bộ gõ nên hiển thị...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Kết quả thực tế
+      description: Mô tả kết quả thực tế xảy ra
+      placeholder: Thay vào đó, bộ gõ hiển thị...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Phiên bản fcitx5-vmk
+      description: Bạn đang sử dụng phiên bản nào?
+      placeholder: 'ví dụ: 1.2.3'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: Cách cài đặt
+      description: Bạn đã cài đặt fcitx5-vmk bằng cách nào?
+      options:
+        - AUR (fcitx5-vmk)
+        - AUR (fcitx5-vmk-bin)
+        - AUR (fcitx5-vmk-git)
+        - Open Build Service (OBS)
+        - NixOS
+        - Tự build từ source
+        - Khác
+    validations:
+      required: true
+
+  - type: input
+    id: distro
+    attributes:
+      label: Hệ điều hành / Distro
+      description: Bạn đang sử dụng hệ điều hành nào?
+      placeholder: 'ví dụ: Arch Linux, Ubuntu 24.04, Fedora 40...'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: desktop_env
+    attributes:
+      label: Môi trường Desktop
+      description: Bạn đang sử dụng môi trường desktop nào?
+      options:
+        - KDE Plasma
+        - GNOME
+        - XFCE
+        - Sway
+        - Hyprland
+        - i3
+        - Khác (ghi cụ thể ở dưới)
+    validations:
+      required: false
+
+  - type: textarea
+    id: diagnose
+    attributes:
+      label: Diagnose
+      description: |
+        Nếu có lỗi, vui lòng cung cấp diagnose từ fcitx5.
+        Bạn có thể lấy diagnose bằng lệnh: `fcitx5-diagnose`.
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Thông tin bổ sung
+      description: Bất kỳ thông tin nào khác có thể hữu ích
+      placeholder: Ảnh chụp màn hình, cấu hình, v.v.
