@@ -1083,6 +1083,26 @@ namespace fcitx {
                 return;
             }
             is_deleting_.store(false);
+
+            // Commit pending preedit text before clearing buffers to prevent data loss.
+            // Strategy: Call EngineCommitPreedit() first (for Preedit mode finalization),
+            // then pull any remaining preedit text (for other modes like VMK1/VMKSmooth).
+            // This ensures text is saved regardless of which mode we're switching from.
+            if (vmkEngine_) {
+                // Finalize preedit properly (required for Preedit mode)
+                EngineCommitPreedit(vmkEngine_.handle());
+                UniqueCPtr<char> commit(EnginePullCommit(vmkEngine_.handle()));
+                if (commit && commit.get()[0]) {
+                    ic_->commitString(commit.get());
+                }
+
+                // Pull any remaining preedit text (for VMK1/VMKSmooth modes)
+                UniqueCPtr<char> preedit(EnginePullPreedit(vmkEngine_.handle()));
+                if (preedit && preedit.get()[0]) {
+                    ic_->commitString(preedit.get());
+                }
+            }
+
             clearAllBuffers();
 
             switch (realMode) {
@@ -1100,8 +1120,7 @@ namespace fcitx {
                     break;
                 }
                 case VMKMode::Emoji: {
-                    emojiBuffer_.clear();
-                    emojiCandidates_.clear();
+                    // Note: emoji buffers already cleared by clearAllBuffers() above
                     ic_->inputPanel().reset();
                     ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
                     ic_->updatePreedit();
@@ -1125,6 +1144,19 @@ namespace fcitx {
                     }
                     ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
                     ic_->updatePreedit();
+                    break;
+                }
+                case VMKMode::VMK1:
+                case VMKMode::VMK1HC:
+                case VMKMode::VMKSmooth: {
+                    // For uinput modes: commit pending preedit when focus changes
+                    // (e.g., when user tabs to another field while typing)
+                    if (vmkEngine_) {
+                        UniqueCPtr<char> preedit(EnginePullPreedit(vmkEngine_.handle()));
+                        if (preedit && preedit.get()[0]) {
+                            ic_->commitString(preedit.get());
+                        }
+                    }
                     break;
                 }
                 case VMKMode::VMK2: {
@@ -1575,7 +1607,8 @@ namespace fcitx {
         FCITX_UNUSED(entry);
         auto ic = keyEvent.inputContext();
 
-        // Check if mouse was clicked to close app mode menu
+        // Handle mouse click event from fcitx5-vmk-server to close app mode menu
+        // The server sends signal via Unix socket when user clicks outside the menu
         if (isSelectingAppMode_ && g_mouse_clicked.load(std::memory_order_relaxed)) {
             closeAppModeMenu();
             ic->inputPanel().reset();
@@ -1584,7 +1617,7 @@ namespace fcitx {
             state->reset();
         }
 
-        // logic when opening app mode menu
+        // Handle keyboard input when app mode selection menu is active
         if (isSelectingAppMode_) {
             if (keyEvent.isRelease())
                 return;
@@ -1593,7 +1626,9 @@ namespace fcitx {
             auto   menuList = std::dynamic_pointer_cast<CommonCandidateList>(baseList);
             KeySym keySym   = keyEvent.key().sym();
 
-            auto   moveCursor = [&](int delta) {
+            // Lambda to move cursor in candidate list with wrap-around
+            // Note: Index 0 is reserved for header ("App: ..."), so valid range is [1, totalSize-1]
+            auto moveCursor = [&](int delta) {
                 if (!menuList || menuList->empty()) {
                     return false;
                 }
@@ -1609,6 +1644,7 @@ namespace fcitx {
                 }
 
                 int nextIndex = cursorIndex + delta;
+                // Wrap around: bottom → top or top → bottom
                 if (nextIndex < 1) {
                     nextIndex = totalSize - 1;
                 } else if (nextIndex >= totalSize) {
@@ -1657,7 +1693,8 @@ namespace fcitx {
             VMKMode selectedMode  = VMKMode::NoMode;
             bool    selectionMade = false;
 
-            // map number key to mode
+            // Map keyboard shortcuts to modes
+            // Numbers [1-4]: VMK input modes, Letters [q/w/e/r]: Special modes/actions
             switch (keySym) {
                 case FcitxKey_1: {
                     selectedMode = VMKMode::VMKSmooth;
@@ -1733,7 +1770,8 @@ namespace fcitx {
             return;
         }
 
-        // logic when typing `
+        // Open app mode selection menu when user presses backtick/grave key (`)
+        // Triggered by Shift+` key combination, allows user to change input mode per-app
         if (!keyEvent.isRelease() && keyEvent.rawKey().check(FcitxKey_grave)) {
             currentConfigureApp_ = ic->program();
             if (currentConfigureApp_.empty())
@@ -1930,6 +1968,9 @@ namespace fcitx {
     }
 
     namespace {
+        // Custom candidate word class that supports both mouse click and keyboard selection
+        // Unlike DisplayOnlyCandidateWord, this executes a callback when selected,
+        // enabling interactive menu items in the app mode selection UI
         class AppModeCandidateWord : public CandidateWord {
           public:
             AppModeCandidateWord(Text text, std::function<void(InputContext*)> callback) : CandidateWord(std::move(text)), callback_(std::move(callback)) {}
@@ -1953,6 +1994,7 @@ namespace fcitx {
         candidateList->setLayoutHint(CandidateLayoutHint::Vertical);
         candidateList->setPageSize(10);
 
+        // Helper lambda: Add ">>" marker to highlight current active mode
         auto getLabel = [&](const VMKMode& modeName, const std::string& modeLabel) {
             if (modeName == realMode) {
                 return Text(">> " + modeLabel);
@@ -1961,14 +2003,18 @@ namespace fcitx {
             }
         };
 
+        // Helper lambda: Cleanup after mode selection (reset UI and commit pending text)
         auto cleanup = [this](InputContext* ic) {
             isSelectingAppMode_ = false;
             ic->inputPanel().reset();
             ic->updateUserInterface(UserInterfaceComponent::InputPanel);
             auto state = ic->propertyFor(&factory_);
-            state->reset();
+            state->reset(); // This will commit any pending preedit text
         };
 
+        // Helper lambda: Create callback to apply selected mode and save app-specific settings
+        // Note: Emoji mode is transient (not saved to appRules), user must explicitly
+        // select it each time they open the menu
         auto applyMode = [this, cleanup](VMKMode mode) {
             return [this, mode, cleanup](InputContext* ic) {
                 if (mode != VMKMode::Emoji) {
@@ -1981,6 +2027,8 @@ namespace fcitx {
             };
         };
 
+        // Build candidate list for app mode menu
+        // Structure: Header + 8 selectable items (4 VMK modes + 4 special options)
         candidateList->append(std::make_unique<DisplayOnlyCandidateWord>(Text(_("App: ") + currentConfigureApp_)));
         candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::VMKSmooth, _("[1] Fake backspace by Uinput (smooth)")), applyMode(VMKMode::VMKSmooth)));
         candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::VMK1, _("[2] Fake backspace by Uinput")), applyMode(VMKMode::VMK1)));
@@ -2005,6 +2053,8 @@ namespace fcitx {
             ic->forwardKey(key, true);
         }));
 
+        // Set initial cursor position to highlight current active mode
+        // Index mapping: 1=VMKSmooth, 2=VMK1, 3=VMK1HC, 4=VMK2, 5=Preedit, 6=Emoji, 7=Off
         int selectedIndex = 1;
         switch (realMode) {
             case VMKMode::VMKSmooth: selectedIndex = 1; break;
@@ -2012,8 +2062,8 @@ namespace fcitx {
             case VMKMode::VMK1HC: selectedIndex = 3; break;
             case VMKMode::VMK2: selectedIndex = 4; break;
             case VMKMode::Preedit: selectedIndex = 5; break;
-            case VMKMode::Off: selectedIndex = 6; break;
-            case VMKMode::Emoji: selectedIndex = 7; break;
+            case VMKMode::Emoji: selectedIndex = 6; break;
+            case VMKMode::Off: selectedIndex = 7; break;
             default: selectedIndex = 1; break;
         }
         candidateList->setGlobalCursorIndex(selectedIndex);
