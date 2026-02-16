@@ -397,6 +397,24 @@ namespace fcitx {
         }
 
         // Helper function for emoji mode
+        void updateEmojiPageStatus(CommonCandidateList* commonList) {
+            if (!commonList || commonList->empty()) {
+                return;
+            }
+
+            int pageSize = commonList->pageSize();
+            if (pageSize <= 0) {
+                pageSize = 9;
+            }
+
+            int         totalItems  = commonList->totalSize();
+            int         currentPage = commonList->currentPage() + 1;
+            int         totalPages  = (totalItems + pageSize - 1) / pageSize;
+
+            std::string status = _("Page ") + std::to_string(currentPage) + "/" + std::to_string(totalPages);
+            ic_->inputPanel().setAuxDown(Text(status));
+        }
+
         void handleEmojiMode(KeyEvent& keyEvent) {
             if (keyEvent.key().hasModifier()) {
                 keyEvent.forward();
@@ -482,6 +500,7 @@ namespace fcitx {
                 }
 
                 if (handled) {
+                    updateEmojiPageStatus(commonList.get());
                     ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
                     keyEvent.filterAndAccept();
                     return;
@@ -589,6 +608,8 @@ namespace fcitx {
                 candidateList->setGlobalCursorIndex(0);
 
                 ic_->inputPanel().setCandidateList(std::move(candidateList));
+                auto currentList = std::dynamic_pointer_cast<CommonCandidateList>(ic_->inputPanel().candidateList());
+                updateEmojiPageStatus(currentList.get());
             } else {
                 ic_->inputPanel().setCandidateList(nullptr);
             }
@@ -1061,6 +1082,26 @@ namespace fcitx {
                 return;
             }
             is_deleting_.store(false);
+
+            // Commit pending preedit text before clearing buffers to prevent data loss.
+            // Strategy: Call EngineCommitPreedit() first (for Preedit mode finalization),
+            // then pull any remaining preedit text (for other modes like VMK1/VMKSmooth).
+            // This ensures text is saved regardless of which mode we're switching from.
+            if (vmkEngine_) {
+                // Finalize preedit properly (required for Preedit mode)
+                EngineCommitPreedit(vmkEngine_.handle());
+                UniqueCPtr<char> commit(EnginePullCommit(vmkEngine_.handle()));
+                if (commit && commit.get()[0]) {
+                    ic_->commitString(commit.get());
+                }
+
+                // Pull any remaining preedit text (for VMK1/VMKSmooth modes)
+                UniqueCPtr<char> preedit(EnginePullPreedit(vmkEngine_.handle()));
+                if (preedit && preedit.get()[0]) {
+                    ic_->commitString(preedit.get());
+                }
+            }
+
             clearAllBuffers();
 
             switch (realMode) {
@@ -1078,8 +1119,6 @@ namespace fcitx {
                     break;
                 }
                 case VMKMode::Emoji: {
-                    emojiBuffer_.clear();
-                    emojiCandidates_.clear();
                     ic_->inputPanel().reset();
                     ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
                     ic_->updatePreedit();
@@ -1103,6 +1142,19 @@ namespace fcitx {
                     }
                     ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
                     ic_->updatePreedit();
+                    break;
+                }
+                case VMKMode::VMK1:
+                case VMKMode::VMK1HC:
+                case VMKMode::VMKSmooth: {
+                    // For uinput modes: commit pending preedit when focus changes
+                    // (e.g., when user tabs to another field while typing)
+                    if (vmkEngine_) {
+                        UniqueCPtr<char> preedit(EnginePullPreedit(vmkEngine_.handle()));
+                        if (preedit && preedit.get()[0]) {
+                            ic_->commitString(preedit.get());
+                        }
+                    }
                     break;
                 }
                 case VMKMode::VMK2: {
@@ -1553,7 +1605,8 @@ namespace fcitx {
         FCITX_UNUSED(entry);
         auto ic = keyEvent.inputContext();
 
-        // Check if mouse was clicked to close app mode menu
+        // Handle mouse click event from fcitx5-vmk-server to close app mode menu
+        // The server sends signal via Unix socket when user clicks outside the menu
         if (isSelectingAppMode_ && g_mouse_clicked.load(std::memory_order_relaxed)) {
             closeAppModeMenu();
             ic->inputPanel().reset();
@@ -1562,19 +1615,79 @@ namespace fcitx {
             state->reset();
         }
 
-        // logic when opening app mode menu
+        // Handle keyboard input when app mode selection menu is active
         if (isSelectingAppMode_) {
             if (keyEvent.isRelease())
                 return;
 
+            auto   baseList = ic->inputPanel().candidateList();
+            auto   menuList = std::dynamic_pointer_cast<CommonCandidateList>(baseList);
+            KeySym keySym   = keyEvent.key().sym();
+
+            // Lambda to move cursor in candidate list with wrap-around
+            // Note: Index 0 is reserved for header ("App: ..."), so valid range is [1, totalSize-1]
+            auto moveCursor = [&](int delta) {
+                if (!menuList || menuList->empty()) {
+                    return false;
+                }
+
+                int totalSize = menuList->totalSize();
+                if (totalSize <= 1) {
+                    return false;
+                }
+
+                int cursorIndex = menuList->globalCursorIndex();
+                if (cursorIndex < 1 || cursorIndex >= totalSize) {
+                    cursorIndex = 1;
+                }
+
+                int nextIndex = cursorIndex + delta;
+                // Wrap around: bottom → top or top → bottom
+                if (nextIndex < 1) {
+                    nextIndex = totalSize - 1;
+                } else if (nextIndex >= totalSize) {
+                    nextIndex = 1;
+                }
+
+                menuList->setGlobalCursorIndex(nextIndex);
+                ic->updateUserInterface(UserInterfaceComponent::InputPanel);
+                return true;
+            };
+
             keyEvent.filterAndAccept();
+
             VMKMode selectedMode  = VMKMode::NoMode;
             bool    selectionMade = false;
 
-            KeySym  keySym = keyEvent.key().sym();
-
-            // map number key to mode
             switch (keySym) {
+                case FcitxKey_Tab:
+                case FcitxKey_Down: {
+                    if (moveCursor(1)) {
+                        return;
+                    }
+                    break;
+                }
+                case FcitxKey_ISO_Left_Tab:
+                case FcitxKey_Up: {
+                    if (moveCursor(-1)) {
+                        return;
+                    }
+                    break;
+                }
+                case FcitxKey_space:
+                case FcitxKey_Return: {
+                    if (menuList && !menuList->empty()) {
+                        int selectedIndex = menuList->globalCursorIndex();
+                        if (selectedIndex < 1 || selectedIndex >= menuList->totalSize()) {
+                            selectedIndex = 1;
+                        }
+                        menuList->candidateFromAll(selectedIndex).select(ic);
+                        return;
+                    }
+                    break;
+                }
+                    // Map keyboard shortcuts to modes
+                    // Numbers [1-4]: VMK input modes, Letters [q/w/e/r]: Special modes/actions
                 case FcitxKey_1: {
                     selectedMode = VMKMode::VMKSmooth;
                     break;
@@ -1591,19 +1704,19 @@ namespace fcitx {
                     selectedMode = VMKMode::VMK2;
                     break;
                 }
-                case FcitxKey_5: {
+                case FcitxKey_q: {
                     selectedMode = VMKMode::Preedit;
                     break;
                 }
-                case FcitxKey_6: {
+                case FcitxKey_w: {
                     selectedMode = VMKMode::Emoji;
                     break;
                 }
-                case FcitxKey_7: {
+                case FcitxKey_e: {
                     selectedMode = VMKMode::Off;
                     break;
                 }
-                case FcitxKey_8: {
+                case FcitxKey_r: {
                     if (appRules_.count(currentConfigureApp_)) {
                         appRules_.erase(currentConfigureApp_);
                         saveAppRules();
@@ -1649,7 +1762,8 @@ namespace fcitx {
             return;
         }
 
-        // logic when typing `
+        // Open app mode selection menu when user presses backtick/grave key (`)
+        // Triggered by Shift+` key combination, allows user to change input mode per-app
         if (!keyEvent.isRelease() && keyEvent.rawKey().check(FcitxKey_grave)) {
             currentConfigureApp_ = ic->program();
             if (currentConfigureApp_.empty())
@@ -1845,6 +1959,25 @@ namespace fcitx {
         g_mouse_clicked.store(false, std::memory_order_relaxed);
     }
 
+    namespace {
+        // Custom candidate word class that supports both mouse click and keyboard selection
+        // Unlike DisplayOnlyCandidateWord, this executes a callback when selected,
+        // enabling interactive menu items in the app mode selection UI
+        class AppModeCandidateWord : public CandidateWord {
+          public:
+            AppModeCandidateWord(Text text, std::function<void(InputContext*)> callback) : CandidateWord(std::move(text)), callback_(std::move(callback)) {}
+
+            void select(InputContext* ic) const override {
+                if (callback_) {
+                    callback_(ic);
+                }
+            }
+
+          private:
+            std::function<void(InputContext*)> callback_;
+        };
+    } // namespace
+
     void vmkEngine::showAppModeMenu(InputContext* ic) {
         isSelectingAppMode_ = true;
 
@@ -1853,31 +1986,79 @@ namespace fcitx {
         candidateList->setLayoutHint(CandidateLayoutHint::Vertical);
         candidateList->setPageSize(10);
 
-        VMKMode currentAppRules = VMKMode::Off;
-        if (appRules_.count(currentConfigureApp_)) {
-            currentAppRules = appRules_[currentConfigureApp_];
-        } else {
-            currentAppRules = globalMode_;
-        }
-
+        // Helper lambda: Add ">>" marker to highlight current active mode
         auto getLabel = [&](const VMKMode& modeName, const std::string& modeLabel) {
-            if (modeName == currentAppRules) {
-                return Text(modeLabel + _(" (Default)"));
+            if (modeName == realMode) {
+                return Text(">> " + modeLabel);
             } else {
-                return Text(modeLabel);
+                return Text("   " + modeLabel);
             }
         };
 
-        candidateList->append(std::make_unique<DisplayOnlyCandidateWord>(Text(_("App name detected by fcitx5: ") + currentConfigureApp_)));
-        candidateList->append(std::make_unique<DisplayOnlyCandidateWord>(getLabel(VMKMode::VMKSmooth, _("1. Fake backspace by Uinput (smooth)"))));
-        candidateList->append(std::make_unique<DisplayOnlyCandidateWord>(getLabel(VMKMode::VMK1, _("2. Fake backspace by Uinput"))));
-        candidateList->append(std::make_unique<DisplayOnlyCandidateWord>(getLabel(VMKMode::VMK1HC, _("3. Fake backspace by Uinput for wine apps"))));
-        candidateList->append(std::make_unique<DisplayOnlyCandidateWord>(getLabel(VMKMode::VMK2, _("4. Surrounding Text"))));
-        candidateList->append(std::make_unique<DisplayOnlyCandidateWord>(getLabel(VMKMode::Preedit, _("5. Preedit"))));
-        candidateList->append(std::make_unique<DisplayOnlyCandidateWord>(Text(_("6. Emoji mode"))));
-        candidateList->append(std::make_unique<DisplayOnlyCandidateWord>(getLabel(VMKMode::Off, "7. OFF - Disable Input Method")));
-        candidateList->append(std::make_unique<DisplayOnlyCandidateWord>(Text(_("8. Remove app settings"))));
-        candidateList->append(std::make_unique<DisplayOnlyCandidateWord>(Text(_("`. Close menu and type `"))));
+        // Helper lambda: Cleanup after mode selection (reset UI and commit pending text)
+        auto cleanup = [this](InputContext* ic) {
+            isSelectingAppMode_ = false;
+            ic->inputPanel().reset();
+            ic->updateUserInterface(UserInterfaceComponent::InputPanel);
+            auto state = ic->propertyFor(&factory_);
+            state->reset(); // This will commit any pending preedit text
+        };
+
+        // Helper lambda: Create callback to apply selected mode and save app-specific settings
+        // Note: Emoji mode is transient (not saved to appRules), user must explicitly
+        // select it each time they open the menu
+        auto applyMode = [this, cleanup](VMKMode mode) {
+            return [this, mode, cleanup](InputContext* ic) {
+                if (mode != VMKMode::Emoji) {
+                    appRules_[currentConfigureApp_] = mode;
+                    saveAppRules();
+                }
+
+                realMode = mode;
+                cleanup(ic);
+            };
+        };
+
+        // Build candidate list for app mode menu
+        // Structure: Header + 8 selectable items (4 VMK modes + 4 special options)
+        candidateList->append(std::make_unique<DisplayOnlyCandidateWord>(Text(_("App: ") + currentConfigureApp_)));
+        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::VMKSmooth, _("[1] Fake backspace by Uinput (smooth)")), applyMode(VMKMode::VMKSmooth)));
+        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::VMK1, _("[2] Fake backspace by Uinput")), applyMode(VMKMode::VMK1)));
+        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::VMK1HC, _("[3] Fake backspace by Uinput for wine apps")), applyMode(VMKMode::VMK1HC)));
+        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::VMK2, _("[4] Surrounding Text")), applyMode(VMKMode::VMK2)));
+        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::Preedit, _("[q] Preedit")), applyMode(VMKMode::Preedit)));
+        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::Emoji, _("[w] Emoji mode")), applyMode(VMKMode::Emoji)));
+        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::Off, _("[e] OFF - Disable Input Method")), applyMode(VMKMode::Off)));
+
+        candidateList->append(std::make_unique<AppModeCandidateWord>(Text(_("[r] Remove app settings")), [this, cleanup](InputContext* ic) {
+            if (appRules_.count(currentConfigureApp_)) {
+                appRules_.erase(currentConfigureApp_);
+                saveAppRules();
+            }
+            cleanup(ic);
+        }));
+
+        candidateList->append(std::make_unique<AppModeCandidateWord>(Text(_("[`] Close menu and type `")), [cleanup](InputContext* ic) {
+            cleanup(ic);
+            Key key(FcitxKey_grave);
+            ic->forwardKey(key, false);
+            ic->forwardKey(key, true);
+        }));
+
+        // Set initial cursor position to highlight current active mode
+        // Index mapping: 1=VMKSmooth, 2=VMK1, 3=VMK1HC, 4=VMK2, 5=Preedit, 6=Emoji, 7=Off
+        int selectedIndex = 1;
+        switch (realMode) {
+            case VMKMode::VMKSmooth: selectedIndex = 1; break;
+            case VMKMode::VMK1: selectedIndex = 2; break;
+            case VMKMode::VMK1HC: selectedIndex = 3; break;
+            case VMKMode::VMK2: selectedIndex = 4; break;
+            case VMKMode::Preedit: selectedIndex = 5; break;
+            case VMKMode::Emoji: selectedIndex = 6; break;
+            case VMKMode::Off: selectedIndex = 7; break;
+            default: selectedIndex = 1; break;
+        }
+        candidateList->setGlobalCursorIndex(selectedIndex);
 
         ic->inputPanel().reset();
         ic->inputPanel().setCandidateList(std::move(candidateList));
