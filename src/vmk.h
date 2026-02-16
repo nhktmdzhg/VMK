@@ -148,6 +148,7 @@ namespace fcitx {
         void updateAutoNonVnRestoreAction(InputContext* ic);
         void updateModernStyleAction(InputContext* ic);
         void updateFreeMarkingAction(InputContext* ic);
+        void updateFixVmk1WithAckAction(InputContext* ic);
         void updateInputMethodAction(InputContext* ic);
         void updateCharsetAction(InputContext* ic);
         void populateConfig();
@@ -188,6 +189,7 @@ namespace fcitx {
         std::unique_ptr<SimpleAction>                     autoNonVnRestoreAction_;
         std::unique_ptr<SimpleAction>                     modernStyleAction_;
         std::unique_ptr<SimpleAction>                     freeMarkingAction_;
+        std::unique_ptr<SimpleAction>                     fixVmk1WithAckAction_;
         std::vector<ScopedConnection>                     connections_;
         CGoObject                                         dictionary_;
         // ibus-bamboo mode save/load
