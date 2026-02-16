@@ -26,7 +26,6 @@
 #include <fcitx/userinterfacemanager.h>
 
 #include <algorithm>
-#include <functional>
 #include <atomic>
 #include <cassert>
 #include <cerrno>
@@ -412,7 +411,7 @@ namespace fcitx {
             int         currentPage = commonList->currentPage() + 1;
             int         totalPages  = (totalItems + pageSize - 1) / pageSize;
 
-            std::string status = std::string("Page ") + std::to_string(currentPage) + "/" + std::to_string(totalPages);
+            std::string status = _("Page ") + std::to_string(currentPage) + "/" + std::to_string(totalPages);
             ic_->inputPanel().setAuxDown(Text(status));
         }
 
@@ -1120,7 +1119,6 @@ namespace fcitx {
                     break;
                 }
                 case VMKMode::Emoji: {
-                    // Note: emoji buffers already cleared by clearAllBuffers() above
                     ic_->inputPanel().reset();
                     ic_->updateUserInterface(UserInterfaceComponent::InputPanel);
                     ic_->updatePreedit();
@@ -1656,11 +1654,15 @@ namespace fcitx {
                 return true;
             };
 
+            keyEvent.filterAndAccept();
+
+            VMKMode selectedMode  = VMKMode::NoMode;
+            bool    selectionMade = false;
+
             switch (keySym) {
                 case FcitxKey_Tab:
                 case FcitxKey_Down: {
                     if (moveCursor(1)) {
-                        keyEvent.filterAndAccept();
                         return;
                     }
                     break;
@@ -1668,7 +1670,6 @@ namespace fcitx {
                 case FcitxKey_ISO_Left_Tab:
                 case FcitxKey_Up: {
                     if (moveCursor(-1)) {
-                        keyEvent.filterAndAccept();
                         return;
                     }
                     break;
@@ -1681,21 +1682,12 @@ namespace fcitx {
                             selectedIndex = 1;
                         }
                         menuList->candidateFromAll(selectedIndex).select(ic);
-                        keyEvent.filterAndAccept();
                         return;
                     }
                     break;
                 }
-                default: break;
-            }
-
-            keyEvent.filterAndAccept();
-            VMKMode selectedMode  = VMKMode::NoMode;
-            bool    selectionMade = false;
-
-            // Map keyboard shortcuts to modes
-            // Numbers [1-4]: VMK input modes, Letters [q/w/e/r]: Special modes/actions
-            switch (keySym) {
+                    // Map keyboard shortcuts to modes
+                    // Numbers [1-4]: VMK input modes, Letters [q/w/e/r]: Special modes/actions
                 case FcitxKey_1: {
                     selectedMode = VMKMode::VMKSmooth;
                     break;
@@ -2036,7 +2028,7 @@ namespace fcitx {
         candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::VMK2, _("[4] Surrounding Text")), applyMode(VMKMode::VMK2)));
         candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::Preedit, _("[q] Preedit")), applyMode(VMKMode::Preedit)));
         candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::Emoji, _("[w] Emoji mode")), applyMode(VMKMode::Emoji)));
-        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::Off, "[e] OFF - Disable Input Method"), applyMode(VMKMode::Off)));
+        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::Off, _("[e] OFF - Disable Input Method")), applyMode(VMKMode::Off)));
 
         candidateList->append(std::make_unique<AppModeCandidateWord>(Text(_("[r] Remove app settings")), [this, cleanup](InputContext* ic) {
             if (appRules_.count(currentConfigureApp_)) {
@@ -2046,7 +2038,7 @@ namespace fcitx {
             cleanup(ic);
         }));
 
-        candidateList->append(std::make_unique<AppModeCandidateWord>(Text(_("[`] Close menu and type `")), [this, cleanup](InputContext* ic) {
+        candidateList->append(std::make_unique<AppModeCandidateWord>(Text(_("[`] Close menu and type `")), [cleanup](InputContext* ic) {
             cleanup(ic);
             Key key(FcitxKey_grave);
             ic->forwardKey(key, false);
