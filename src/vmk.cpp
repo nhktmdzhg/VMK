@@ -1734,9 +1734,7 @@ namespace fcitx {
                     ic->updateUserInterface(UserInterfaceComponent::InputPanel);
                     auto state = ic->propertyFor(&factory_);
                     state->reset();
-                    Key key(FcitxKey_grave);
-                    ic->forwardKey(key, false);
-                    ic->forwardKey(key, true);
+                    ic->commitString("`");
                     return;
                 }
                 default: break;
@@ -2040,9 +2038,7 @@ namespace fcitx {
 
         candidateList->append(std::make_unique<AppModeCandidateWord>(Text(_("[`] Close menu and type `")), [cleanup](InputContext* ic) {
             cleanup(ic);
-            Key key(FcitxKey_grave);
-            ic->forwardKey(key, false);
-            ic->forwardKey(key, true);
+            ic->commitString("`");
         }));
 
         // Set initial cursor position to highlight current active mode
