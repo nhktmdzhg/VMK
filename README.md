@@ -2,7 +2,7 @@
 
 <div align="center">
   <a href="https://github.com/nhktmdzhg/VMK">
-    <img src="data/icons/scalable/apps/fcitx-vmk.svg" alt="Logo" width="80" height="80">
+    <img src="data/icons/scalable/apps/fcitx-vmk-logo.svg" alt="Logo" width="80" height="80">
   </a>
 
   <h2 align="center">Fcitx5 VMK</h2>
