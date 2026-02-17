@@ -135,8 +135,8 @@ msgid " (Default)"
 msgstr " (Mặc định)"
 
 #: src/vmk.cpp:1871
-msgid "App name detected by fcitx5: "
-msgstr "Tên ứng dụng nhận dạng bởi fcitx5: "
+msgid "App: "
+msgstr "Ứng dụng: "
 
 #: src/vmk.cpp:1872
 msgid "1. Fake backspace by Uinput (smooth)"
@@ -148,7 +148,7 @@ msgstr "2. Phím xóa giả bởi uinput"
 
 #: src/vmk.cpp:1874
 msgid "3. Fake backspace by Uinput for wine apps"
-msgstr "3. Phím xóa giả bởi uinput cho các ứng dụng wine"
+msgstr "3. Phím xóa giả bởi uinput cho ứng dụng wine"
 
 #: src/vmk.cpp:1875
 msgid "4. Surrounding Text"

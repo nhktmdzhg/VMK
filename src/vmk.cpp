@@ -2061,15 +2061,15 @@ namespace fcitx {
         // Build candidate list for app mode menu
         // Structure: Header + 8 selectable items (4 VMK modes + 4 special options)
         candidateList->append(std::make_unique<DisplayOnlyCandidateWord>(Text(_("App: ") + currentConfigureApp_)));
-        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::VMKSmooth, _("[1] Fake backspace by Uinput (smooth)")), applyMode(VMKMode::VMKSmooth)));
-        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::VMK1, _("[2] Fake backspace by Uinput")), applyMode(VMKMode::VMK1)));
-        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::VMK1HC, _("[3] Fake backspace by Uinput for wine apps")), applyMode(VMKMode::VMK1HC)));
+        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::VMKSmooth, _("[1] Uinput (smooth)")), applyMode(VMKMode::VMKSmooth)));
+        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::VMK1, _("[2] Uinput (Slow)")), applyMode(VMKMode::VMK1)));
+        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::VMK1HC, _("[3] Uinput (Hardcore)")), applyMode(VMKMode::VMK1HC)));
         candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::VMK2, _("[4] Surrounding Text")), applyMode(VMKMode::VMK2)));
         candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::Preedit, _("[q] Preedit")), applyMode(VMKMode::Preedit)));
-        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::Emoji, _("[w] Emoji mode")), applyMode(VMKMode::Emoji)));
-        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::Off, _("[e] OFF - Disable Input Method")), applyMode(VMKMode::Off)));
+        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::Emoji, _("[w] Emoji Picker")), applyMode(VMKMode::Emoji)));
+        candidateList->append(std::make_unique<AppModeCandidateWord>(getLabel(VMKMode::Off, _("[e] OFF")), applyMode(VMKMode::Off)));
 
-        candidateList->append(std::make_unique<AppModeCandidateWord>(Text(_("[r] Remove app settings")), [this, cleanup](InputContext* ic) {
+        candidateList->append(std::make_unique<AppModeCandidateWord>(Text(_("[r] Remove App Settings")), [this, cleanup](InputContext* ic) {
             if (appRules_.count(currentConfigureApp_)) {
                 appRules_.erase(currentConfigureApp_);
                 saveAppRules();
@@ -2077,7 +2077,7 @@ namespace fcitx {
             cleanup(ic);
         }));
 
-        candidateList->append(std::make_unique<AppModeCandidateWord>(Text(_("[`] Close menu and type `")), [cleanup](InputContext* ic) {
+        candidateList->append(std::make_unique<AppModeCandidateWord>(Text(_("[`] Type `")), [cleanup](InputContext* ic) {
             cleanup(ic);
             ic->commitString("`");
         }));
