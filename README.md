@@ -1,20 +1,26 @@
+## Thông báo dời nhà
+
+Dự án đã được dọn dẹp, đổi tên để tránh nhầm lẫn với tác giả gốc thanhpy2009.
+
+**[Xin vào đây](https://github.com/LotusInputMethod/fcitx5-lotus)**
+
 <a id="readme-top"></a>
 
 <div align="center">
-  <a href="https://github.com/nhktmdzhg/VMK">
+  <a href="https://github.com/LotusInputMethod/fcitx5-lotus">
     <img src="data/icons/scalable/apps/fcitx-vmk-logo.svg" alt="Logo" width="80" height="80">
   </a>
 
-  <h2 align="center">Fcitx5 VMK</h2>
+  <h2 align="center">Fcitx5 Lotus</h2>
 
   <p align="center">
     <b>Bộ gõ tiếng Việt đơn giản, hiệu năng cao cho Linux</b>
     <br />
     <br />
-    <a href="https://github.com/nhktmdzhg/VMK/releases">
+    <a href="https://github.com/LotusInputMethod/fcitx5-lotus/releases">
       <img src="https://img.shields.io/github/v/release/nhktmdzhg/VMK?style=flat&color=success" alt="Release">
     </a>
-    <a href="https://github.com/nhktmdzhg/VMK/blob/main/LICENSE">
+    <a href="https://github.com/LotusInputMethod/fcitx5-lotus/blob/main/LICENSE">
       <img src="https://img.shields.io/github/license/nhktmdzhg/VMK?style=flat&color=blue" alt="License">
     </a>
     <a href="https://github.com/nhktmdzhg/VMK/stargazers">
